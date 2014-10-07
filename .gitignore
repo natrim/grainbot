@@ -21,3 +21,7 @@ _testmain.go
 
 *.exe
 *.test
+
+#specific
+config.json
+build
