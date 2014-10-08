@@ -13,6 +13,7 @@ import (
 )
 
 type Configuration struct {
+	filepath string
 	HostName string
 	Port     int
 	SSL      bool
@@ -22,16 +23,11 @@ type Configuration struct {
 	Modules  map[string]interface{}
 }
 
-func New() *Configuration {
+func NewConfiguration() *Configuration {
 	return &Configuration{}
 }
 
-func (conf *Configuration) Load(file string) error {
-	conf, err := Load(file)
-	return err
-}
-
-func Load(file string) (*Configuration, error) {
+func (conf *Configuration) LoadFromFile(file string) error {
 	var pathToConfig string
 	var err error
 	var loaded bool
@@ -66,36 +62,45 @@ func Load(file string) (*Configuration, error) {
 		}
 	}
 
-	var data *Configuration
 	if pathToConfig != "" {
 		var buff []byte
 		buff, err = ioutil.ReadFile(pathToConfig)
 
 		if err == nil {
-			data = &Configuration{}
-			err = json.Unmarshal(buff, data)
+			err = json.Unmarshal(buff, conf)
 			if err == nil {
 				loaded = true
+				conf.filepath = pathToConfig
 			}
 		}
 	}
 
 	if !loaded {
 		if err != nil {
-			return nil, errors.New("Cannot load config file! " + err.Error())
+			return errors.New("Cannot load config file! " + err.Error())
 		} else {
-			return nil, errors.New("Cannot load config file!")
+			return errors.New("Cannot load config file!")
 		}
 	}
 
-	return data, nil
+	return nil
 }
 
-func (conf *Configuration) Save(file string) error {
-	return Save(conf, file)
+func (conf *Configuration) Load() error {
+	return conf.LoadFromFile("")
 }
 
-func Save(conf *Configuration, file string) error {
+func LoadConfigFromFile(file string) (*Configuration, error) {
+	conf := &Configuration{}
+	return conf, conf.LoadFromFile(file)
+}
+
+func LoadConfig() (*Configuration, error) {
+	conf := &Configuration{}
+	return conf, conf.LoadFromFile("")
+}
+
+func (conf *Configuration) SaveToFile(file string) error {
 	if conf == nil {
 		return errors.New("I need valid Configuration to save!")
 	}
@@ -104,12 +109,16 @@ func Save(conf *Configuration, file string) error {
 	var err error
 
 	if file == "" {
-		var path string
-		path, err = osext.ExecutableFolder() //current bin directory
-		if err == nil {
-			filename = filepath.Join(path, "config.json")
+		if conf.filepath != "" {
+			filename = conf.filepath
 		} else {
-			filename = "config.json"
+			var path string
+			path, err = osext.ExecutableFolder() //current bin directory
+			if err == nil {
+				filename = filepath.Join(path, "config.json")
+			} else {
+				filename = "config.json"
+			}
 		}
 	} else if !filepath.IsAbs(file) {
 		var path string
@@ -134,6 +143,18 @@ func Save(conf *Configuration, file string) error {
 	}
 
 	return nil
+}
+
+func SaveConfigToFile(conf *Configuration, file string) error {
+	return conf.SaveToFile(file)
+}
+
+func (conf *Configuration) Save() error {
+	return conf.SaveToFile("")
+}
+
+func SaveConfig(conf *Configuration) error {
+	return conf.SaveToFile("")
 }
 
 func (conf *Configuration) Set(key string, value interface{}) error {

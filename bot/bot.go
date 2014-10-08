@@ -19,7 +19,7 @@ var grainbot *Bot
 var generateConfig = flag.Bool("config", false, "Generate empty config if not exists?")
 
 func init() {
-	grainbot = &Bot{Config: config.New(), Connection: NewConnection("dashy", "grainbot", "Dashius Optimus"), modules: make(map[string]Module)}
+	grainbot = &Bot{Config: config.NewConfiguration(), Connection: NewConnection("dashy", "grainbot", "Botus Grainus"), modules: make(map[string]Module)}
 
 	//parse flags
 	flag.Parse()
@@ -47,7 +47,7 @@ func Run() {
 	log.Printf("GRAINBOT - GRAIN based IRC bot ( pid: %d )\n\n", Getpid())
 
 	//load config
-	err = grainbot.Config.Load("")
+	err = grainbot.Config.Load()
 	if err != nil {
 		if !*generateConfig {
 			log.Fatalln(err)
@@ -67,8 +67,6 @@ func Run() {
 		}
 	}
 	log.Println("Modules loaded.")
-
-	log.Println(grainbot.Config.String())
 
 	//set connection
 	if grainbot.Config.HostName != "" {
@@ -129,7 +127,7 @@ func Run() {
 
 	//save config
 	if !grainbot.restarting {
-		err = grainbot.Config.Save("")
+		err = grainbot.Config.Save()
 		if err != nil {
 			log.Println("Config save failed.")
 			log.Fatalln(err)

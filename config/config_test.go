@@ -27,7 +27,7 @@ func TestLoad(t *testing.T) {
 
 	defer os.Remove(filepath.Join(path, "test_load.json"))
 
-	conf, err := Load("test_load.json")
+	conf, err := LoadConfigFromFile("test_load.json")
 	if err != nil {
 		t.Log("Nelze načíst testovací configurák!")
 		t.Log(err)
@@ -45,7 +45,7 @@ func TestLoad(t *testing.T) {
 func TestSave(t *testing.T) {
 	//t.Fail()
 
-	err := Save(ExampleConfig(), "test_save.json")
+	err := SaveConfigToFile(ExampleConfig(), "test_save.json")
 
 	if err != nil {
 		t.Log("Nelze uložit config!")
@@ -71,6 +71,26 @@ func TestSave(t *testing.T) {
 	}
 }
 
+func TestSelfLoad(t *testing.T) {
+	conf := ExampleConfig()
+	conf.HostName = "pony"
+	conf.SaveToFile("test_selfload.json")
+	defer os.Remove("test_selfload.json")
+
+	conf = NewConfiguration()
+
+	if conf.HostName != "" {
+		t.Fail()
+	}
+
+	conf.LoadFromFile("test_selfload.json")
+
+	if conf.HostName != "pony" {
+		t.Log("Failed to load config!")
+		t.Fail()
+	}
+}
+
 func TestModuleThings(t *testing.T) {
 	//t.Fail()
 
@@ -83,8 +103,8 @@ func TestModuleThings(t *testing.T) {
 	conf.Set("test4.two", 2)
 	conf.Set("test5.pony", []string{"RD", "F", "TS", "PP", "AJ", "R"})
 
-	Save(conf, "test_thingies.json")
-	conf2, _ := Load("test_thingies.json")
+	SaveConfigToFile(conf, "test_thingies.json")
+	conf2, _ := LoadConfigFromFile("test_thingies.json")
 
 	defer os.Remove("test_thingies.json")
 

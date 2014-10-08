@@ -34,7 +34,7 @@ func beforeFork() error {
 	grainbot.Connection.cleanUp()
 
 	//save config right now
-	err := grainbot.Config.Save("")
+	err := grainbot.Config.Save()
 	if err != nil {
 		log.Println("Config save failed.")
 		log.Fatalln(err)
