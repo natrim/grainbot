@@ -5,19 +5,27 @@ import (
 	"io/ioutil"
 	"os"
 	"testing"
+	"bitbucket.org/kardianos/osext"
+	"path/filepath"
 )
+
+var path string
+
+func init(){
+	path, _ = osext.ExecutableFolder() //current bin directory
+}
 
 func TestLoad(t *testing.T) {
 	//t.Fail()
 
-	if err := ioutil.WriteFile("test_load.json", []byte(ExampleConfig().String()), 0664); err != nil {
+	if err := ioutil.WriteFile(filepath.Join(path, "test_load.json"), []byte(ExampleConfig().String()), 0664); err != nil {
 		t.Log("Nelze vytvořit testovací configurák!")
 		t.Log(err)
 		t.Fail()
 		return
 	}
 
-	defer os.Remove("test_load.json")
+	defer os.Remove(filepath.Join(path, "test_load.json"))
 
 	conf, err := Load("test_load.json")
 	if err != nil {
@@ -46,9 +54,9 @@ func TestSave(t *testing.T) {
 		return
 	}
 
-	defer os.Remove("test_save.json")
+	defer os.Remove(filepath.Join(path, "test_save.json"))
 
-	data, err := ioutil.ReadFile("test_save.json")
+	data, err := ioutil.ReadFile(filepath.Join(path, "test_save.json"))
 	if err != nil {
 		t.Log("Nelze načíst uložit config!")
 		t.Log(err)

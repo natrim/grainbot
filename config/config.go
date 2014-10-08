@@ -106,7 +106,7 @@ func Save(conf *Configuration, file string) error {
 	if file == "" {
 		var path string
 		path, err = osext.ExecutableFolder() //current bin directory
-		if err != nil {
+		if err == nil {
 			filename = filepath.Join(path, "config.json")
 		} else {
 			filename = "config.json"
@@ -114,7 +114,7 @@ func Save(conf *Configuration, file string) error {
 	} else if !filepath.IsAbs(file) {
 		var path string
 		path, err = osext.ExecutableFolder() //current bin directory
-		if err != nil {
+		if err == nil {
 			filename = filepath.Join(path, file)
 		} else {
 			filename = file
@@ -301,5 +301,5 @@ func (conf *Configuration) String() string {
 }
 
 func ExampleConfig() *Configuration {
-	return &Configuration{HostName: "walter.ecstasy.cz", Modules: map[string]interface{}{"autojoin": []string{"#pony"}}}
+	return &Configuration{HostName: "irc.deltaanime.net", Modules: map[string]interface{}{"autojoin": map[string]interface{}{"channels": []string{"#pony"}}}}
 }
