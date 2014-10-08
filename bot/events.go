@@ -2,6 +2,7 @@ package bot
 
 import (
 	"log"
+	"math/rand"
 	"strconv"
 	"strings"
 	"time"
@@ -85,19 +86,11 @@ func defaultHandlers(event *Event) {
 	case "PING":
 		irc.SendRawf("PONG %s", event.Arguments[len(event.Arguments)-1])
 
-	case "437":
-		// irc.currentNickname = irc.currentNickname + "_"
-		// irc.SendRawf("NICK %s", irc.currentNickname)
-
 	case "430":
 	case "431":
 	case "432":
 	case "433":
-		if len(irc.currentNickname) > 8 {
-			irc.currentNickname = "_" + irc.currentNickname
-		} else {
-			irc.currentNickname = irc.currentNickname + "_"
-		}
+		irc.currentNickname = irc.currentNickname + strconv.Itoa(rand.Intn(9))
 		irc.Nick(irc.currentNickname)
 
 	case "PONG":
