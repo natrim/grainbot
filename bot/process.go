@@ -20,6 +20,8 @@ import (
 var SignalChan chan os.Signal
 
 const (
+	SIGINT  = syscall.SIGINT
+	SIGTERM = syscall.SIGTERM
 	SIGQUIT = syscall.SIGQUIT
 	SIGUSR2 = syscall.SIGUSR2
 )
@@ -86,6 +88,8 @@ func WaitOnSignals(l net.Conn) error {
 	SignalChan = make(chan os.Signal, 2)
 	signal.Notify(
 		SignalChan,
+		syscall.SIGINT,
+		syscall.SIGTERM,
 		syscall.SIGQUIT,
 		syscall.SIGUSR2,
 	)
@@ -93,6 +97,10 @@ func WaitOnSignals(l net.Conn) error {
 	for {
 		sig := <-SignalChan
 		switch sig {
+		case syscall.SIGTERM:
+			return nil //just unblock
+		case syscall.SIGINT:
+			return nil //just unblock
 		case syscall.SIGQUIT:
 			return nil //just unblock
 		case syscall.SIGUSR2:
@@ -100,6 +108,18 @@ func WaitOnSignals(l net.Conn) error {
 				return nil
 			}
 			forked = true
+
+			grainbot.restarting = true
+			log.Printf("GRAINBOT ( pid: %d ) RESTARTING\n\n", Getpid())
+
+			//save config
+			err := grainbot.Config.Save("")
+			if err != nil {
+				log.Println("Config save failed.")
+				log.Fatalln(err)
+			} else {
+				log.Println("Config saved.")
+			}
 
 			if nil != OnBeforeFork {
 				if err := OnBeforeFork(l); nil != err {

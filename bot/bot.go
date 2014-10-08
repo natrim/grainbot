@@ -12,6 +12,7 @@ type Bot struct {
 	Config     *config.Configuration
 	Connection *Connection
 	modules    map[string]Module
+	restarting bool
 }
 
 var grainbot *Bot
@@ -66,6 +67,8 @@ func Run() {
 		}
 	}
 	log.Println("Modules loaded.")
+
+	log.Println(grainbot.Config.String())
 
 	//set connection
 	if grainbot.Config.HostName != "" {
@@ -124,13 +127,18 @@ func Run() {
 		log.Fatalln(err)
 	}
 
-	//load config
-	err = grainbot.Config.Save("")
-	if err != nil {
-		log.Fatalln(err)
-		return
+	//save config
+	if !grainbot.restarting {
+		err = grainbot.Config.Save("")
+		if err != nil {
+			log.Println("Config save failed.")
+			log.Fatalln(err)
+		} else {
+			log.Println("Config saved.")
+		}
 	}
-	log.Println("Config saved.")
+
+	log.Printf("GRAINBOT ( pid: %d ) TERMINATED\n\n", Getpid())
 }
 
 func Halt() {
