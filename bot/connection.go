@@ -51,16 +51,6 @@ func NewConnection(nick, user, realname string) (irc *Connection) {
 		broadcast: broadcast.NewBroadcaster(1024),
 	}
 
-	//todo: pokud bude mozno vic pripojeni na jednoho bota tak upravit
-	OnBeforeFork = func(l net.Conn) error {
-		irc.restarting = true
-		//TODO: je potreba ulozit nastavení předtím než nastartuju novej process - tzn. ukončení bez socketu - nějaké přepnutí do zombuie modu?
-
-		irc.CleanUp()
-
-		return nil
-	}
-
 	irc.AddHandler(defaultHandlers)
 
 	return irc
@@ -70,11 +60,11 @@ func (irc *Connection) Connect() error {
 	var err error
 
 	//try to reuse connection from parent
-	irc.Socket, err = RestartConnection()
+	irc.Socket, err = restartConnection()
 	if err == nil { //we got connection from parent
 		irc.restarting = true
 		//kill parent
-		if err := KillParentAfterRestart(); err != nil {
+		if err := killParentAfterRestart(); err != nil {
 			return err
 		}
 	}
@@ -129,7 +119,7 @@ func (irc *Connection) Connect() error {
 
 func (irc *Connection) Disconnect() error {
 	if !irc.restarting { //pri restartu je uklid jiz drive
-		irc.CleanUp()
+		irc.cleanUp()
 	}
 
 	if irc.IsConnected {
@@ -147,7 +137,7 @@ func (irc *Connection) Disconnect() error {
 	return errors.New("Not connected!")
 }
 
-func (irc *Connection) CleanUp() {
+func (irc *Connection) cleanUp() {
 	close(irc.write)
 	close(irc.exit)
 }

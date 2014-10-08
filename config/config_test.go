@@ -1,17 +1,17 @@
 package config_test
 
 import (
+	"bitbucket.org/kardianos/osext"
 	. "github.com/natrim/grainbot/config"
 	"io/ioutil"
 	"os"
-	"testing"
-	"bitbucket.org/kardianos/osext"
 	"path/filepath"
+	"testing"
 )
 
 var path string
 
-func init(){
+func init() {
 	path, _ = osext.ExecutableFolder() //current bin directory
 }
 

@@ -26,9 +26,24 @@ const (
 	SIGUSR2 = syscall.SIGUSR2
 )
 
-var (
-	OnBeforeFork func(l net.Conn) error
-)
+func beforeFork() error {
+	log.Printf("GRAINBOT ( pid: %d ) RESTARTING\n\n", Getpid())
+
+	grainbot.restarting = true
+	grainbot.Connection.restarting = true
+	grainbot.Connection.cleanUp()
+
+	//save config right now
+	err := grainbot.Config.Save("")
+	if err != nil {
+		log.Println("Config save failed.")
+		log.Fatalln(err)
+	} else {
+		log.Println("Config saved.")
+	}
+
+	return err
+}
 
 func Getpid() int {
 	return syscall.Getpid()
@@ -44,7 +59,7 @@ func Restart() {
 
 // Kill process specified in the environment with the signal specified in the
 // environment; default to SIGQUIT.
-func KillParentAfterRestart() error {
+func killParentAfterRestart() error {
 	var pid int
 	_, err := fmt.Sscan(os.Getenv("RESTART_PID"), &pid)
 	if io.EOF == err {
@@ -60,7 +75,7 @@ func KillParentAfterRestart() error {
 
 // Reconstruct a net.Conn from a file descriptior and name specified in the
 // environment.  Deal with Go's insistence on dup(2)ing file descriptors.
-func RestartConnection() (l net.Conn, err error) {
+func restartConnection() (l net.Conn, err error) {
 	var fd uintptr
 	if _, err = fmt.Sscan(os.Getenv("RESTART_FD"), &fd); nil != err {
 		return
@@ -109,22 +124,8 @@ func WaitOnSignals(l net.Conn) error {
 			}
 			forked = true
 
-			grainbot.restarting = true
-			log.Printf("GRAINBOT ( pid: %d ) RESTARTING\n\n", Getpid())
-
-			//save config
-			err := grainbot.Config.Save("")
-			if err != nil {
-				log.Println("Config save failed.")
-				log.Fatalln(err)
-			} else {
-				log.Println("Config saved.")
-			}
-
-			if nil != OnBeforeFork {
-				if err := OnBeforeFork(l); nil != err {
-					log.Println("OnBeforeFork:", err)
-				}
+			if err := beforeFork(); nil != err {
+				log.Println("BeforeForkError:", err)
 			}
 
 			if err := forkAndExec(l); nil != err { //pri prvnim signalu udelej fork, vrat hodnotu jen kdyz bude chyba
