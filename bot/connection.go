@@ -163,7 +163,6 @@ func (irc *Connection) readLoop() {
 
 	for {
 		if irc.restarting { //close on restart
-			log.Println("Read loop STOP.")
 			return
 		}
 
@@ -191,7 +190,6 @@ func (irc *Connection) writeLoop() {
 	for {
 		select {
 		case <-irc.exit:
-			log.Println("Write loop STOP.")
 			return
 		case b, ok := <-irc.write:
 			if !ok || b == "" || irc.Socket == nil {
@@ -219,7 +217,6 @@ func (irc *Connection) pingLoop() {
 			// Shut down everything
 			ticker.Stop()
 			ticker2.Stop()
-			log.Println("Ping loop STOP.")
 			return
 		case <-ticker.C:
 			// Ping if we haven't received anything from the server within 4 minutes
