@@ -103,10 +103,8 @@ func (irc *Connection) Connect() error {
 		go irc.writeLoop()
 		go irc.pingLoop()
 
-		if !irc.restarting { //pri restartu se nemusim znova pripojovat
-			//take care of the inital flush
-			irc.postConnect()
-		}
+		//take care of the inital flush
+		irc.postConnect()
 
 		irc.reconnecting = false
 		irc.restarting = false
@@ -165,6 +163,7 @@ func (irc *Connection) readLoop() {
 
 	for {
 		if irc.restarting { //close on restart
+			log.Println("Read loop STOP.")
 			return
 		}
 
@@ -241,18 +240,22 @@ func (irc *Connection) pingLoop() {
 }
 
 func (irc *Connection) postConnect() {
-	if len(irc.Password) > 0 {
-		irc.SendRawf("PASS %s", irc.Password)
+	if irc.restarting {
+		irc.Nick(irc.Nickname) //try original nick
+	} else {
+		if len(irc.Password) > 0 {
+			irc.SendRawf("PASS %s", irc.Password)
+		}
+
+		irc.Nick(irc.Nickname)
+
+		realname := irc.RealName
+		if irc.RealName == "" {
+			realname = irc.Username
+		}
+
+		irc.SendRawf("USER %s 0.0.0.0 0.0.0.0 :%s", irc.Username, realname)
 	}
-
-	irc.Nick(irc.Nickname)
-
-	realname := irc.RealName
-	if irc.RealName == "" {
-		realname = irc.Username
-	}
-
-	irc.SendRawf("USER %s 0.0.0.0 0.0.0.0 :%s", irc.Username, realname)
 }
 
 //irc commands
