@@ -307,7 +307,7 @@ func (irc *Connection) Ctcpn(target, message string) {
 }
 
 func (irc *Connection) Ctcpnf(target, format string, a ...interface{}) {
-	irc.Ctcp(target, fmt.Sprintf(format, a...))
+	irc.Ctcpn(target, fmt.Sprintf(format, a...))
 }
 
 func (irc *Connection) Action(target, message string) {

@@ -101,16 +101,17 @@ func defaultHandlers(event *Event) {
 	case "PRIVMSG", "NOTICE":
 		if event.Arguments[0] == irc.currentNickname && len(event.Arguments[1]) > 2 && strings.HasPrefix(event.Arguments[1], "\x01") && strings.HasSuffix(event.Arguments[1], "\x01") {
 			ctcp := strings.Trim(event.Arguments[1], "\x01")
+			parts := strings.Split(ctcp, " ")
 
-			switch ctcp {
+			switch parts[0] {
 			case "VERSION":
-				irc.Ctcpn(event.Nick, "VERSION pony2")
+				irc.Ctcpn(event.Nick, "VERSION grainbot:2:pony")
 
 			case "TIME":
 				irc.Ctcpnf(event.Nick, "TIME %d", time.Now().Unix())
 
-			case "PING": //TODO: fix
-				irc.Ctcpnf(event.Nick, "%s", ctcp)
+			case "PING":
+				irc.Ctcpn(event.Nick, ctcp)
 
 			case "USERINFO":
 				irc.Ctcpnf(event.Nick, "USERINFO %s", irc.Username)
