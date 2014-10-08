@@ -163,25 +163,25 @@ func (conf *Configuration) Set(key string, value interface{}) error {
 	return nil
 }
 
-func (conf *Configuration) Get(key string) interface{} {
+func (conf *Configuration) Get(key string) (interface{}, error) {
 	key = strings.ToLower(key)
 
 	keys := strings.Split(key, ".")
 
 	if len(keys) <= 1 {
-		return errors.New("You need to specify from what module you want to get data! \"(syntax: module.key)\"")
+		return nil, errors.New("You need to specify from what module you want to get data! \"(syntax: module.key)\"")
 	}
 
-	ret := conf.Modules[keys[0]]
-	if ret == nil {
-		return nil
+	ret, ok := conf.Modules[keys[0]]
+	if !ok {
+		return nil, errors.New("Module cofiguration not found!")
 	}
 
-	return ret.(map[string]interface{})[keys[1]]
+	return ret.(map[string]interface{})[keys[1]], nil
 }
 
 func (conf *Configuration) GetString(key string) string {
-	ret := conf.Get(key)
+	ret, _ := conf.Get(key)
 
 	switch s := ret.(type) {
 	case string:
@@ -200,7 +200,7 @@ func (conf *Configuration) GetString(key string) string {
 }
 
 func (conf *Configuration) GetInt(key string) int {
-	ret := conf.Get(key)
+	ret, _ := conf.Get(key)
 
 	switch s := ret.(type) {
 	case int:
@@ -236,7 +236,7 @@ func (conf *Configuration) GetInt(key string) int {
 }
 
 func (conf *Configuration) GetBool(key string) bool {
-	ret := conf.Get(key)
+	ret, _ := conf.Get(key)
 
 	switch b := ret.(type) {
 	case bool:
@@ -260,7 +260,7 @@ func (conf *Configuration) GetBool(key string) bool {
 }
 
 func (conf *Configuration) GetStringSlice(key string) []string {
-	ret := conf.Get(key)
+	ret, _ := conf.Get(key)
 
 	var a []string
 
