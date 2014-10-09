@@ -67,8 +67,10 @@ func (irc *Connection) AddHandler(f func(*Event)) chan bool {
 	go func() {
 		for {
 			select {
-			case <-killchan:
-				return
+			case k := <-killchan:
+				if k {
+					return
+				}
 			case e := <-messages:
 				event := e.(*Event)
 				f(event)
@@ -101,10 +103,10 @@ func defaultHandlers(event *Event) {
 
 			switch parts[0] {
 			case "VERSION":
-				irc.Ctcpn(event.Nick, "VERSION grainbot:2:pony")
+				irc.Ctcpn(event.Nick, "VERSION rainbot:2:grain")
 
 			case "TIME":
-				irc.Ctcpnf(event.Nick, "TIME %d", time.Now().Unix())
+				irc.Ctcpnf(event.Nick, "TIME %s", time.Now().Format(time.RFC1123))
 
 			case "PING":
 				irc.Ctcpn(event.Nick, ctcp)

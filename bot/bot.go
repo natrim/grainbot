@@ -37,6 +37,7 @@ func RegisterModule(name string, module Module) {
 	lname := strings.ToLower(name)
 	if grainbot.modules[lname] == nil {
 		grainbot.modules[lname] = module
+		module.Initialize(grainbot.Connection, name)
 	} else {
 		log.Println("Cannot register module \"" + name + "\", module with same name already exists!")
 	}
@@ -62,7 +63,7 @@ func Run() {
 	log.Println("Loading modules...")
 	for modname, module := range grainbot.modules {
 		if module != nil {
-			module.Activate(grainbot.Connection)
+			module.Activate()
 			log.Println("Module \"" + modname + "\" loaded.")
 		}
 	}
