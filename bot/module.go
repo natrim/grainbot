@@ -1,6 +1,9 @@
 package bot
 
-import "errors"
+import (
+	"errors"
+	"github.com/natrim/grainbot/permissions"
+)
 
 type Module interface {
 	Initialize(connection *Connection, name string)
@@ -45,9 +48,9 @@ func (m *EasyModule) Deactivate() {
 
 var easyHandlers = make(map[string]map[string]chan bool)
 
-func (m *EasyModule) AddHandler(name string, f func(*Event)) error {
+func (m *EasyModule) AddHandler(name string, f func(*Event), permission permissions.Permission) error {
 	if _, ok := easyHandlers[m.name]; !ok {
-		easyHandlers[m.name] = map[string]chan bool{name: m.connection.AddHandler(f)}
+		easyHandlers[m.name] = map[string]chan bool{name: m.connection.AddHandler(f, permission)}
 		return nil
 	}
 
@@ -55,7 +58,7 @@ func (m *EasyModule) AddHandler(name string, f func(*Event)) error {
 		return errors.New("Handler with same name already exist's!")
 	}
 
-	easyHandlers[m.name][name] = m.connection.AddHandler(f)
+	easyHandlers[m.name][name] = m.connection.AddHandler(f, permission)
 	return nil
 }
 

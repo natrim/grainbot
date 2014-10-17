@@ -1,6 +1,7 @@
 package bot
 
 import (
+	"github.com/natrim/grainbot/permissions"
 	"log"
 	"strconv"
 	"strings"
@@ -61,7 +62,7 @@ func (irc *Connection) parseIRCMessage(msg string) *Event {
 	}
 }
 
-func (irc *Connection) AddHandler(f func(*Event)) chan bool {
+func (irc *Connection) AddHandler(f func(*Event), permission permissions.Permission) chan bool {
 	messages := irc.broadcast.Listen(1024)
 	killchan := make(chan bool)
 	go func() {
@@ -73,7 +74,13 @@ func (irc *Connection) AddHandler(f func(*Event)) chan bool {
 				}
 			case e := <-messages:
 				event := e.(*Event)
-				f(event)
+				if permission != nil {
+					if ok := permission.Validate(event.Nick, event.User, event.Host); ok {
+						f(event)
+					}
+				} else {
+					f(event)
+				}
 			}
 		}
 	}()

@@ -11,7 +11,7 @@ func init() {
 					event.Server.Join(chn)
 				}
 			}
-		})
+		}, nil)
 	},
 	})
 }

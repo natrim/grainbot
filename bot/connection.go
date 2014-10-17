@@ -51,7 +51,7 @@ func NewConnection(nick, user, realname string) (irc *Connection) {
 		broadcast: broadcast.NewBroadcaster(1024),
 	}
 
-	irc.AddHandler(defaultHandlers)
+	irc.AddHandler(defaultHandlers, nil)
 
 	return irc
 }
