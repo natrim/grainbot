@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"sync"
 )
 
 type Configuration struct {
@@ -21,6 +22,8 @@ type Configuration struct {
 	UserName string
 	RealName string
 	Modules  map[string]interface{}
+
+	sync.RWMutex
 }
 
 func NewConfiguration() *Configuration {
@@ -31,6 +34,9 @@ func (conf *Configuration) LoadFromFile(file string) error {
 	var pathToConfig string
 	var err error
 	var loaded bool
+
+	conf.Lock()
+	defer conf.Unlock()
 
 	if file != "" {
 		if filepath.IsAbs(file) {
@@ -108,6 +114,9 @@ func (conf *Configuration) SaveToFile(file string) error {
 	var filename string
 	var err error
 
+	conf.Lock()
+	defer conf.Unlock()
+
 	if file == "" {
 		if conf.filepath != "" {
 			filename = conf.filepath
@@ -158,6 +167,9 @@ func SaveConfig(conf *Configuration) error {
 }
 
 func (conf *Configuration) Set(key string, value interface{}) error {
+	conf.Lock()
+	defer conf.Unlock()
+
 	key = strings.ToLower(key)
 
 	keys := strings.Split(key, ".")
@@ -185,6 +197,9 @@ func (conf *Configuration) Set(key string, value interface{}) error {
 }
 
 func (conf *Configuration) Get(key string) (interface{}, error) {
+	conf.RLock()
+	defer conf.RUnlock()
+
 	key = strings.ToLower(key)
 
 	keys := strings.Split(key, ".")
@@ -317,6 +332,9 @@ func (conf *Configuration) GetStringSlice(key string) []string {
 }
 
 func (conf *Configuration) String() string {
+	conf.RLock()
+	defer conf.RUnlock()
+
 	cbuf, _ := json.Marshal(conf)
 	return string(cbuf)
 }
