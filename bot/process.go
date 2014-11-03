@@ -33,13 +33,19 @@ func beforeFork() error {
 	grainbot.Connection.restarting = true
 	grainbot.Connection.cleanUp()
 
+	for _, module := range grainbot.modules {
+		if module != nil {
+			module.Deactivate()
+			grainbot.mwg.Done()
+		}
+	}
+	grainbot.mwg.Wait() //wait for closing of all
+
 	//save config right now
 	err := grainbot.Config.Save()
 	if err != nil {
 		log.Println("Config save failed.")
 		log.Fatalln(err)
-	} else {
-		log.Println("Config saved.")
 	}
 
 	return err
