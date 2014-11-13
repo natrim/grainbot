@@ -141,7 +141,7 @@ func (conf *Configuration) SaveToFile(file string) error {
 
 	if filename != "" {
 		var cbuf []byte
-		cbuf, err = json.Marshal(conf)
+		cbuf, err = json.MarshalIndent(conf, "", "    ")
 		if err == nil {
 			err = ioutil.WriteFile(filename, cbuf, 0644)
 		}
@@ -335,7 +335,12 @@ func (conf *Configuration) String() string {
 	conf.RLock()
 	defer conf.RUnlock()
 
-	cbuf, _ := json.Marshal(conf)
+	cbuf, err := json.MarshalIndent(conf, "", "    ")
+
+	if err != nil {
+		return "{\"error\": \" " + err.Error() + " \"}"
+	}
+
 	return string(cbuf)
 }
 

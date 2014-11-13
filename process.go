@@ -1,4 +1,4 @@
-package bot
+package main
 
 /**
 DUPLICATED from goagain + modded to use net.Conn
@@ -25,31 +25,6 @@ const (
 	SIGQUIT = syscall.SIGQUIT
 	SIGUSR2 = syscall.SIGUSR2
 )
-
-func beforeFork() error {
-	log.Printf("GRAINBOT ( pid: %d ) RESTARTING\n\n", Getpid())
-
-	grainbot.restarting = true
-	grainbot.Connection.restarting = true
-	grainbot.Connection.cleanUp()
-
-	for _, module := range grainbot.modules {
-		if module != nil {
-			module.Deactivate()
-			grainbot.mwg.Done()
-		}
-	}
-	grainbot.mwg.Wait() //wait for closing of all
-
-	//save config right now
-	err := grainbot.Config.Save()
-	if err != nil {
-		log.Println("Config save failed.")
-		log.Fatalln(err)
-	}
-
-	return err
-}
 
 func Getpid() int {
 	return syscall.Getpid()
@@ -81,7 +56,7 @@ func killParentAfterRestart() error {
 
 // Reconstruct a net.Conn from a file descriptior and name specified in the
 // environment.  Deal with Go's insistence on dup(2)ing file descriptors.
-func restartConnection() (l net.Conn, err error) {
+func findSocket() (l net.Conn, err error) {
 	var fd uintptr
 	if _, err = fmt.Sscan(os.Getenv("RESTART_FD"), &fd); nil != err {
 		return
@@ -105,7 +80,7 @@ func restartConnection() (l net.Conn, err error) {
 	return
 }
 
-func WaitOnSignals(l net.Conn) error {
+func (bot *Bot) WaitOnSignals(l net.Conn) error {
 	SignalChan = make(chan os.Signal, 2)
 	signal.Notify(
 		SignalChan,
@@ -130,7 +105,7 @@ func WaitOnSignals(l net.Conn) error {
 			}
 			forked = true
 
-			if err := beforeFork(); nil != err {
+			if err := bot.beforeFork(); nil != err {
 				log.Println("BeforeForkError:", err)
 			}
 

@@ -1,11 +1,12 @@
-package bot
+package irc
 
 import (
+	"github.com/natrim/grainbot/broadcast"
+
 	"bufio"
 	"crypto/tls"
 	"errors"
 	"fmt"
-	"github.com/natrim/grainbot/broadcast"
 	"io"
 	"log"
 	"net"
@@ -56,20 +57,20 @@ func NewConnection(nick, user, realname string) (irc *Connection) {
 	return irc
 }
 
-func (irc *Connection) Connect() error {
-	var err error
-
-	//try to reuse connection from parent
-	irc.Socket, err = restartConnection()
-	if err == nil { //we got connection from parent
+func (irc *Connection) ConnectTo(socket net.Conn) error {
+	if socket != nil {
+		irc.Socket = socket
 		irc.restarting = true
-		//kill parent
-		if err := killParentAfterRestart(); err != nil {
-			return err
-		}
+		return irc.Connect()
 	}
 
+	return errors.New("No socket connection found!")
+}
+
+func (irc *Connection) Connect() error {
 	if !irc.IsConnected {
+		var err error
+
 		if irc.restarting {
 			if irc.Secured {
 				log.Printf("Reusing connection to tls://%s:%d\n", irc.Hostname, irc.Port)
@@ -144,6 +145,11 @@ func (irc *Connection) Reconnect() error {
 	irc.reconnecting = true
 	irc.Disconnect()
 	return irc.Connect()
+}
+
+func (irc *Connection) Restart() {
+	irc.restarting = true
+	irc.cleanUp()
 }
 
 //send raw irc message

@@ -1,12 +1,17 @@
 package main
 
 import (
-	"github.com/natrim/grainbot/bot"
-
-	//put your modules here
-	_ "github.com/natrim/grainbot/modules/autojoin"
+	"github.com/natrim/grainbot/modules"
+	"github.com/natrim/grainbot/modules/autojoin"
 )
 
+var grainbot *Bot
+
 func main() {
-	bot.Run() //blocks
+	grainbot = NewBot()
+
+	//register modules
+	grainbot.RegisterModule(modules.NewModule("autojoin", autojoin.Init, nil))
+
+	grainbot.Run() //blocks
 }

@@ -1,4 +1,4 @@
-package bot
+package irc
 
 import (
 	"github.com/natrim/grainbot/permissions"
@@ -8,7 +8,7 @@ import (
 	"time"
 )
 
-type Event struct {
+type Message struct {
 	Raw              string // Raw message string
 	Prefix           string
 	Command          string
@@ -17,8 +17,12 @@ type Event struct {
 	Nick, User, Host string
 }
 
+func (m *Message) reply(message string) {
+	m.Server.Privmsg(m.Nick, message)
+}
+
 //raw irc string parsing
-func (irc *Connection) parseIRCMessage(msg string) *Event {
+func (irc *Connection) parseIRCMessage(msg string) *Message {
 	// http://twistedmatrix.com/trac/browser/trunk/twisted/words/protocols/irc.py#54
 	prefix := ""
 	trailing := ""
@@ -50,7 +54,7 @@ func (irc *Connection) parseIRCMessage(msg string) *Event {
 		host = prefix[j+1 : len(prefix)]
 	}
 
-	return &Event{
+	return &Message{
 		Raw:       msg,
 		Prefix:    prefix,
 		Command:   command,
@@ -62,7 +66,7 @@ func (irc *Connection) parseIRCMessage(msg string) *Event {
 	}
 }
 
-func (irc *Connection) AddHandler(f func(*Event), permission permissions.Permission) chan bool {
+func (irc *Connection) AddHandler(f func(*Message), permission permissions.Permission) chan bool {
 	messages := irc.broadcast.Listen(1024)
 	killchan := make(chan bool)
 	go func() {
@@ -73,7 +77,7 @@ func (irc *Connection) AddHandler(f func(*Event), permission permissions.Permiss
 					return
 				}
 			case e := <-messages:
-				event := e.(*Event)
+				event := e.(*Message)
 				if permission != nil {
 					if ok := permission.Validate(event.Nick, event.User, event.Host); ok {
 						f(event)
@@ -87,7 +91,7 @@ func (irc *Connection) AddHandler(f func(*Event), permission permissions.Permiss
 	return killchan
 }
 
-func defaultHandlers(event *Event) {
+func defaultHandlers(event *Message) {
 	irc := event.Server
 
 	switch event.Command {
@@ -124,14 +128,8 @@ func defaultHandlers(event *Event) {
 			case "CLIENTINFO":
 				irc.Ctcpnf(event.Nick, "CLIENTINFO PING VERSION TIME USERINFO CLIENTINFO")
 			}
-		} else if event.Arguments[0] == irc.currentNickname {
-			switch event.Arguments[1] {
-			case "quit":
-				irc.Quit() //send irc quit command
-				Quit()     //quit bot
-			case "restart":
-				Restart() //restart bot
-			}
+		} else if event.Arguments[0] == irc.currentNickname { //direct messages
+			//nothing here for now
 		}
 	case "001":
 		//log.Print(event.Arguments)
