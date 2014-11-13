@@ -14,11 +14,56 @@ type Message struct {
 	Command          string
 	Arguments        []string
 	Server           *Connection
+	Channel          string
 	Nick, User, Host string
 }
 
-func (m *Message) reply(message string) {
-	m.Server.Privmsg(m.Nick, message)
+func (m *Message) Action(message string) {
+	if m.Channel != "" {
+		m.Server.Action(m.Channel, message)
+	} else {
+		m.Server.Action(m.Nick, message)
+	}
+}
+
+func (m *Message) Actionf(message string, a ...interface{}) {
+	if m.Channel != "" {
+		m.Server.Actionf(m.Channel, message, a...)
+	} else {
+		m.Server.Actionf(m.Nick, message, a...)
+	}
+}
+
+func (m *Message) Respond(message string) {
+	if m.Channel != "" {
+		m.Server.Privmsg(m.Channel, message)
+	} else {
+		m.Server.Privmsg(m.Nick, message)
+	}
+}
+
+func (m *Message) Respondf(message string, a ...interface{}) {
+	if m.Channel != "" {
+		m.Server.Privmsgf(m.Channel, message, a...)
+	} else {
+		m.Server.Privmsgf(m.Nick, message, a...)
+	}
+}
+
+func (m *Message) Mention(message string) {
+	if m.Channel != "" {
+		m.Server.Privmsg(m.Channel, m.Nick+", "+message)
+	} else {
+		m.Server.Privmsg(m.Nick, m.Nick+", "+message)
+	}
+}
+
+func (m *Message) Mentionf(message string, a ...interface{}) {
+	if m.Channel != "" {
+		m.Server.Privmsgf(m.Channel, m.Nick+", "+message, a...)
+	} else {
+		m.Server.Privmsgf(m.Nick, m.Nick+", "+message, a...)
+	}
 }
 
 //raw irc string parsing
@@ -54,11 +99,17 @@ func (irc *Connection) parseIRCMessage(msg string) *Message {
 		host = prefix[j+1 : len(prefix)]
 	}
 
+	channel := ""
+	if args[0] != irc.currentNickname {
+		channel = args[0]
+	}
+
 	return &Message{
 		Raw:       msg,
 		Prefix:    prefix,
 		Command:   command,
 		Arguments: args,
+		Channel:   channel,
 		Server:    irc,
 		Nick:      nick,
 		User:      user,
@@ -108,7 +159,7 @@ func defaultHandlers(event *Message) {
 		log.Printf("Lag: %v\n", delta)
 
 	case "PRIVMSG", "NOTICE":
-		if event.Arguments[0] == irc.currentNickname && len(event.Arguments[1]) > 2 && strings.HasPrefix(event.Arguments[1], "\x01") && strings.HasSuffix(event.Arguments[1], "\x01") {
+		if event.Arguments[0] == irc.currentNickname && len(event.Arguments[1]) > 2 && strings.HasPrefix(event.Arguments[1], "\x01") && strings.HasSuffix(event.Arguments[1], "\x01") { //ctcp
 			ctcp := strings.Trim(event.Arguments[1], "\x01")
 			parts := strings.Split(ctcp, " ")
 
@@ -128,10 +179,6 @@ func defaultHandlers(event *Message) {
 			case "CLIENTINFO":
 				irc.Ctcpnf(event.Nick, "CLIENTINFO PING VERSION TIME USERINFO CLIENTINFO")
 			}
-		} else if event.Arguments[0] == irc.currentNickname { //direct messages
-			//nothing here for now
 		}
-	case "001":
-		//log.Print(event.Arguments)
 	}
 }

@@ -268,6 +268,10 @@ func (irc *Connection) Nick(n string) {
 	irc.SendRawf("NICK %s", n)
 }
 
+func (irc *Connection) CurrentNick() string {
+	return irc.currentNickname
+}
+
 func (irc *Connection) GetNick() string {
 	return irc.currentNickname
 }

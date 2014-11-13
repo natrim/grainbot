@@ -26,24 +26,7 @@ func init() {
 }
 
 func NewBot() *Bot {
-	bot := &Bot{Config: config.NewConfiguration(), Connection: irc.NewConnection("dashy", "grainbot", "Botus Grainus"), modules: make(map[string]*modules.Module), mwg: &sync.WaitGroup{}}
-
-	bot.Connection.AddHandler(botHandlers, nil)
-
-	return bot
-}
-
-func botHandlers(event *irc.Message) {
-	switch event.Command {
-	case "PRIVMSG", "NOTICE":
-		switch event.Arguments[1] {
-		case "quit":
-			event.Server.Quit() //send irc quit command
-			Quit()              //quit bot
-		case "restart":
-			Restart() //restart bot
-		}
-	}
+	return &Bot{Config: config.NewConfiguration(), Connection: irc.NewConnection("dashy", "grainbot", "Botus Grainus"), modules: make(map[string]*modules.Module), mwg: &sync.WaitGroup{}}
 }
 
 func (b *Bot) RegisterModule(mod *modules.Module) {

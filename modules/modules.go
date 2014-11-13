@@ -58,7 +58,7 @@ func (m *Module) Deactivate() {
 	}
 }
 
-func (m *Module) AddHandler(name string, f func(*irc.Message), permission permissions.Permission) error {
+func (m *Module) AddIrcMessageHandler(name string, f func(*irc.Message), permission permissions.Permission) error {
 	if _, ok := m.handlers[name]; ok {
 		return errors.New("Handler with same name already exist's!")
 	}
@@ -67,7 +67,7 @@ func (m *Module) AddHandler(name string, f func(*irc.Message), permission permis
 	return nil
 }
 
-func (m *Module) RemoveHandler(name string) error {
+func (m *Module) RemoveIrcMessageHandler(name string) error {
 	if len(m.handlers) < 0 {
 		return errors.New("This module has no handlers!")
 	}

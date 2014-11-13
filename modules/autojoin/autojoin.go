@@ -6,7 +6,7 @@ import (
 )
 
 func Init(mod *modules.Module) {
-	mod.AddHandler("join on ok", func(event *irc.Message) {
+	mod.AddIrcMessageHandler("join on ok", func(event *irc.Message) {
 		if event.Command == "001" {
 			channels := mod.GetConfig().GetStringSlice("autojoin.channels")
 			for _, chn := range channels {
