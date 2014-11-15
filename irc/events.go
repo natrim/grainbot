@@ -149,9 +149,14 @@ func defaultHandlers(event *Message) {
 	case "PING":
 		irc.SendRawf("PONG %s", event.Arguments[len(event.Arguments)-1])
 
-	case "433":
+	case "433", "437":
 		irc.currentNickname = irc.currentNickname + "_"
 		irc.Nick(irc.currentNickname)
+
+	case "NICK":
+		if event.Nick == irc.currentNickname {
+			irc.currentNickname = event.Arguments[0]
+		}
 
 	case "PONG":
 		ns, _ := strconv.ParseInt(event.Arguments[1], 10, 64)
