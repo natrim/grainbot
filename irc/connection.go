@@ -168,27 +168,28 @@ func (irc *Connection) readLoop() {
 	br := bufio.NewReaderSize(irc.Socket, 512)
 
 	for {
-		if irc.restarting { //close on restart
+		select {
+		case <-irc.exit:
 			return
-		}
+		default:
+			msg, err := br.ReadString('\n')
 
-		msg, err := br.ReadString('\n')
-
-		if err != nil {
-			if err != io.EOF {
-				irc.ErrorChan <- err
+			if err != nil {
+				if err != io.EOF {
+					irc.ErrorChan <- err
+				}
+				return
 			}
-			return
+
+			irc.lastMessage = msg
+			irc.lastMessageTime = time.Now()
+			msg = strings.Trim(msg, "\r\n")
+
+			log.Printf("[RECV]<< %s", msg)
+
+			// Publish on broadcast channel
+			irc.broadcast.Write(irc.parseIRCMessage(msg))
 		}
-
-		irc.lastMessage = msg
-		irc.lastMessageTime = time.Now()
-		msg = strings.Trim(msg, "\r\n")
-
-		log.Printf("[RECV]<< %s", msg)
-
-		// Publish on broadcast channel
-		irc.broadcast.Write(irc.parseIRCMessage(msg))
 	}
 }
 
