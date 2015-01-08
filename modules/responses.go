@@ -2,10 +2,12 @@ package modules
 
 import (
 	"errors"
-	"github.com/natrim/grainbot/irc"
-	"github.com/natrim/grainbot/permissions"
+	"log"
 	"regexp"
 	"strings"
+
+	"github.com/natrim/grainbot/irc"
+	"github.com/natrim/grainbot/permissions"
 )
 
 type Response struct {
@@ -20,16 +22,23 @@ func (m *Module) AddResponse(reg *regexp.Regexp, f func(*Response), permission p
 		switch m.Command {
 		case "PRIVMSG", "NOTICE":
 			nick := m.Server.CurrentNick()
-			current := regexp.MustCompile("^" + nick + "[ ,;:]")
 			text := strings.Join(m.Arguments[1:], " ")
 			if m.Arguments[0] == nick { //direct privmsg or asked from channel
 				if reg.MatchString(strings.Trim(text, " ")) {
-					f(&Response{m, text, reg.FindAllString(text, -1)})
+					f(&Response{m, text, reg.FindStringSubmatch(text)})
 				}
-			} else if current.MatchString(text) {
-				nl := len(nick) + 1
-				if len(text) > nl && reg.MatchString(strings.Trim(text[nl:], " ")) {
-					f(&Response{m, text, reg.FindAllString(text, -1)})
+			} else {
+				current, err := regexp.Compile("^" + nick + "[ ,;:]")
+				if err != nil {
+					log.Println("Failed to compile nick regexp: ", err)
+				} else if current.MatchString(text) {
+					nl := len(nick) + 1
+					if len(text) > nl {
+						just_text := text[nl:]
+						if reg.MatchString(strings.Trim(just_text, " ")) {
+							f(&Response{m, text, reg.FindStringSubmatch(just_text)})
+						}
+					}
 				}
 			}
 		}
