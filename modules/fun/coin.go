@@ -1,11 +1,12 @@
 package fun
 
 import (
-	"github.com/natrim/grainbot/irc"
-	"github.com/natrim/grainbot/modules"
 	"math/rand"
 	"regexp"
 	"time"
+
+	"github.com/natrim/grainbot/irc"
+	"github.com/natrim/grainbot/modules"
 )
 
 func init() {
@@ -27,8 +28,11 @@ func throwCoin(r *irc.Message) {
 	}
 }
 
+var coinreg = regexp.MustCompile("^((throw|kick) )?coin( (.*))?$")
+
+// InitCoin register's coin command on module load
 func InitCoin(mod *modules.Module) {
-	mod.AddResponse(regexp.MustCompile("^((throw|kick) )?coin$"), func(r *modules.Response) {
+	mod.AddResponse(coinreg, func(r *modules.Response) {
 		throwCoin(r.Message)
 	}, nil)
 	mod.AddCommand("coin", func(r *modules.Command) {
