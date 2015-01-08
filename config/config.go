@@ -21,7 +21,10 @@ type Configuration struct {
 	Nick     string
 	UserName string
 	RealName string
-	Modules  map[string]interface{}
+
+	Owner string
+
+	Modules map[string]interface{}
 
 	sync.RWMutex
 }
@@ -345,5 +348,5 @@ func (conf *Configuration) String() string {
 }
 
 func ExampleConfig() *Configuration {
-	return &Configuration{HostName: "irc.deltaanime.net", Modules: map[string]interface{}{"autojoin": map[string]interface{}{"channels": []string{"#pony"}}}}
+	return &Configuration{HostName: "irc.deltaanime.net", Owner: "Natrim", Modules: map[string]interface{}{"autojoin": map[string]interface{}{"channels": []string{"#pony"}}}}
 }

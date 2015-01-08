@@ -11,6 +11,16 @@ func NewModule(name string, init func(*Module), halt func(*Module)) *Module {
 	return &Module{name: name, Init: init, Halt: halt}
 }
 
+// Start run's before module loading - only once per bot live
+func Start(conn *irc.Connection, conf *config.Configuration) {
+	//put owner nick in permission
+	ownerNick = conf.Owner
+}
+
+// Stop run's before module unloading - only once per bot live
+func Stop(conn *irc.Connection, conf *config.Configuration) {
+}
+
 type Module struct {
 	Init func(*Module)
 	Halt func(*Module)
@@ -22,9 +32,9 @@ type Module struct {
 	handlers map[string]chan bool
 }
 
-func (m *Module) Initialize(conn *irc.Connection, config *config.Configuration, name string) {
+func (m *Module) Initialize(conn *irc.Connection, conf *config.Configuration, name string) {
 	m.connection = conn
-	m.config = config
+	m.config = conf
 	m.name = name
 	m.handlers = make(map[string]chan bool)
 }

@@ -71,6 +71,9 @@ func (b *Bot) Run() {
 	}
 	log.Println("Config loaded.")
 
+	//Start module thingie
+	modules.Start(b.Connection, b.Config)
+
 	//load modules
 	log.Println("Loading modules...")
 	for modname, mod := range b.modules {
@@ -152,6 +155,9 @@ func (b *Bot) Run() {
 	if err := b.Connection.Disconnect(); err != nil {
 		log.Fatalln(err)
 	}
+
+	//module thingie
+	modules.Stop(b.Connection, b.Config)
 
 	//unload modules
 	if !b.restarting {
