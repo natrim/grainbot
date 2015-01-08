@@ -48,7 +48,6 @@ func NewConnection(nick, user, realname string) (irc *Connection) {
 		Nickname:  nick,
 		Username:  user,
 		RealName:  realname,
-		exit:      make(chan struct{}),
 		broadcast: broadcast.NewBroadcaster(1024),
 	}
 
@@ -90,15 +89,16 @@ func (irc *Connection) Connect() error {
 			}
 		}
 
-		irc.IsConnected = true
 		log.Printf("Connected to %s (%s)\n", irc.Hostname, irc.Socket.RemoteAddr())
 
 		irc.write = make(chan string, 1024)
+		irc.exit = make(chan struct{})
 		irc.ErrorChan = make(chan error, 2)
 
 		irc.lastMessage = ""
 		irc.lastMessageTime = time.Now()
 		irc.currentNickname = irc.Nickname
+		irc.IsConnected = true
 
 		go irc.readLoop()
 		go irc.writeLoop()
@@ -107,6 +107,7 @@ func (irc *Connection) Connect() error {
 		//take care of the inital flush
 		irc.postConnect()
 
+		//these two needs to be here because some func before use them
 		irc.reconnecting = false
 		irc.restarting = false
 
@@ -137,7 +138,9 @@ func (irc *Connection) Disconnect() error {
 }
 
 func (irc *Connection) cleanUp() {
-	close(irc.write)
+	if irc.IsConnected {
+		close(irc.write)
+	}
 	close(irc.exit)
 }
 
@@ -279,6 +282,10 @@ func (irc *Connection) GetNick() string {
 
 func (irc *Connection) Quit() {
 	irc.SendRaw("QUIT")
+}
+
+func (irc *Connection) QuitWithMessage(message string) {
+	irc.SendRawf("QUIT :%s", message)
 }
 
 func (irc *Connection) Join(channel string) {

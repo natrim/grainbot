@@ -5,12 +5,14 @@ import (
 	"log"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/natrim/grainbot/config"
 	"github.com/natrim/grainbot/irc"
 	"github.com/natrim/grainbot/modules"
 )
 
+// Bot is the main struct with aaall the ponies
 type Bot struct {
 	Config     *config.Configuration
 	Connection *irc.Connection
@@ -25,10 +27,12 @@ func init() {
 	flag.Parse()
 }
 
+// NewBot create's new Bot instance
 func NewBot() *Bot {
 	return &Bot{Config: config.NewConfiguration(), Connection: irc.NewConnection("dashy", "grainbot", "Botus Grainus"), modules: make(map[string]*modules.Module), mwg: &sync.WaitGroup{}}
 }
 
+// RegisterModule register's module into bot
 func (b *Bot) RegisterModule(mod *modules.Module) {
 	name := mod.Name()
 	lname := strings.ToLower(name)
@@ -40,9 +44,19 @@ func (b *Bot) RegisterModule(mod *modules.Module) {
 	}
 }
 
+// Run spin's and block's - i mean it runs the bot
 func (b *Bot) Run() {
 	var err error
 	log.Printf("GRAINBOT - GRAIN based IRC bot ( pid: %d )\n\n", Getpid())
+
+	//first try to find saved socket
+	socket, err := findSocket()
+	if err == nil { //ok we have socket so kill parent first
+		if err := killParentAfterRestart(); err != nil {
+			log.Fatalln(err)
+			return
+		}
+	}
 
 	//load config
 	err = b.Config.Load()
@@ -95,10 +109,7 @@ func (b *Bot) Run() {
 	}
 
 	//connect
-
-	//first try to find saved socket
-	socket, err := findSocket()
-	if err == nil {
+	if socket != nil {
 		if err := b.Connection.ConnectTo(socket); err != nil {
 			log.Fatalln(err)
 			return
@@ -119,7 +130,13 @@ func (b *Bot) Run() {
 				return
 			}
 			log.Printf("error: %s\n", err)
-			b.Connection.Reconnect()
+			log.Println("Reconnecting in 10 seconds...")
+			time.Sleep(10 * time.Second)
+
+			err = b.Connection.Reconnect()
+			if err != nil {
+				log.Printf("error: %s\n", err)
+			}
 		}
 	}()
 
@@ -164,26 +181,22 @@ func (b *Bot) Run() {
 	log.Printf("GRAINBOT ( pid: %d ) TERMINATED\n\n", Getpid())
 }
 
-func (b *Bot) Halt() {
-	b.Connection.Disconnect()
-}
-
-func (bot *Bot) beforeFork() error {
+func (b *Bot) beforeFork() error {
 	log.Printf("GRAINBOT ( pid: %d ) RESTARTING\n\n", Getpid())
 
-	bot.restarting = true
-	bot.Connection.Restart()
+	b.restarting = true
+	b.Connection.Restart()
 
-	for _, module := range bot.modules {
+	for _, module := range b.modules {
 		if module != nil {
 			module.Deactivate()
-			bot.mwg.Done()
+			b.mwg.Done()
 		}
 	}
-	bot.mwg.Wait() //wait for closing of all
+	b.mwg.Wait() //wait for closing of all
 
 	//save config right now
-	err := bot.Config.Save()
+	err := b.Config.Save()
 	if err != nil {
 		log.Println("Config save failed.")
 		log.Fatalln(err)

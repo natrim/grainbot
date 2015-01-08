@@ -17,8 +17,10 @@ import (
 	"syscall"
 )
 
+// SignalChan accepts SIGINT, SIGTERM, SIGQUIT resp. SIGUSR2 signals for quit resp. restart
 var SignalChan chan os.Signal
 
+// Just alias some syscall signals
 const (
 	SIGINT  = syscall.SIGINT
 	SIGTERM = syscall.SIGTERM
@@ -26,14 +28,17 @@ const (
 	SIGUSR2 = syscall.SIGUSR2
 )
 
+// Getpid return's current process pid
 func Getpid() int {
 	return syscall.Getpid()
 }
 
+// Quit terminates bot
 func Quit() {
 	SignalChan <- syscall.SIGQUIT
 }
 
+// Restart restart's bot
 func Restart() {
 	SignalChan <- syscall.SIGUSR2
 }
@@ -80,6 +85,7 @@ func findSocket() (l net.Conn, err error) {
 	return
 }
 
+// WaitOnSignals will block process until receives quit or restart signal
 func (bot *Bot) WaitOnSignals(l net.Conn) error {
 	SignalChan = make(chan os.Signal, 2)
 	signal.Notify(
