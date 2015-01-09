@@ -138,8 +138,6 @@ func (irc *Connection) AddHandler(f func(*Message), permission permissions.Permi
 					if permission != nil {
 						if ok := permission.Validate(event.Nick, event.User, event.Host); ok {
 							f(event)
-						} else {
-							event.Mention("you are not supossed to do this!")
 						}
 					} else {
 						f(event)
