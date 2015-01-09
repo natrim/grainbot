@@ -8,13 +8,14 @@ It enables process restart without droping net.Conn
 import (
 	"fmt"
 	"io"
-	"log"
 	"net"
 	"os"
 	"os/exec"
 	"os/signal"
 	"reflect"
 	"syscall"
+
+	log "github.com/Sirupsen/logrus"
 )
 
 // SignalChan accepts SIGINT, SIGTERM, SIGQUIT resp. SIGUSR2 signals for quit resp. restart
@@ -55,7 +56,7 @@ func killParentAfterRestart() error {
 		return err
 	}
 
-	log.Println("Sending parent GRAIN (pid: ", pid, ") QUIT signal")
+	log.Infoln("Sending parent GRAIN (pid: ", pid, ") QUIT signal")
 	return syscall.Kill(pid, syscall.SIGQUIT)
 }
 
@@ -112,7 +113,7 @@ func (bot *Bot) WaitOnSignals(l net.Conn) error {
 			forked = true
 
 			if err := bot.beforeFork(); nil != err {
-				log.Println("BeforeForkError:", err)
+				log.Errorln("BeforeForkError:", err)
 			}
 
 			if err := forkAndExec(l); nil != err { //pri prvnim signalu udelej fork, vrat hodnotu jen kdyz bude chyba
@@ -163,7 +164,7 @@ func forkAndExec(l net.Conn) error {
 	if nil != err {
 		return err
 	}
-	log.Println("Spawned new GRAIN child (pid: ", p.Pid, ")")
+	log.Infoln("Spawned new GRAIN child (pid: ", p.Pid, ")")
 	if err = os.Setenv("RESTART_PID", fmt.Sprint(p.Pid)); nil != err {
 		return err
 	}

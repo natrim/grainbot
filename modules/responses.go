@@ -2,9 +2,10 @@ package modules
 
 import (
 	"errors"
-	"log"
 	"regexp"
 	"strings"
+
+	log "github.com/Sirupsen/logrus"
 
 	"github.com/natrim/grainbot/irc"
 	"github.com/natrim/grainbot/permissions"
@@ -30,7 +31,7 @@ func (m *Module) AddResponse(reg *regexp.Regexp, f func(*Response), permission p
 			} else {
 				current, err := regexp.Compile("^" + nick + "[ ,;:]")
 				if err != nil {
-					log.Println("Failed to compile nick regexp: ", err)
+					log.Error("Failed to compile nick regexp: ", err)
 				} else if current.MatchString(text) {
 					nl := len(nick) + 1
 					if len(text) > nl {

@@ -8,10 +8,11 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log"
 	"net"
 	"strings"
 	"time"
+
+	log "github.com/Sirupsen/logrus"
 )
 
 type Connection struct {
@@ -72,16 +73,16 @@ func (irc *Connection) Connect() error {
 
 		if irc.restarting {
 			if irc.Secured {
-				log.Printf("Reusing connection to tls://%s:%d\n", irc.Hostname, irc.Port)
+				log.Debugf("Reusing connection to tls://%s:%d", irc.Hostname, irc.Port)
 			} else {
-				log.Printf("Reusing connection to tcp://%s:%d\n", irc.Hostname, irc.Port)
+				log.Debugf("Reusing connection to tcp://%s:%d", irc.Hostname, irc.Port)
 			}
 		} else {
 			if irc.Secured {
-				log.Printf("Connecting to tls://%s:%d\n", irc.Hostname, irc.Port)
+				log.Debugf("Connecting to tls://%s:%d", irc.Hostname, irc.Port)
 				irc.Socket, err = tls.Dial("tcp", fmt.Sprintf("%s:%d", irc.Hostname, irc.Port), nil)
 			} else {
-				log.Printf("Connecting to tcp://%s:%d\n", irc.Hostname, irc.Port)
+				log.Debugf("Connecting to tcp://%s:%d", irc.Hostname, irc.Port)
 				irc.Socket, err = net.Dial("tcp", fmt.Sprintf("%s:%d", irc.Hostname, irc.Port))
 			}
 			if err != nil {
@@ -89,7 +90,7 @@ func (irc *Connection) Connect() error {
 			}
 		}
 
-		log.Printf("Connected to %s (%s)\n", irc.Hostname, irc.Socket.RemoteAddr())
+		log.Infof("Connected to %s (%s)", irc.Hostname, irc.Socket.RemoteAddr())
 
 		irc.write = make(chan string, 1024)
 		irc.exit = make(chan struct{})
@@ -128,7 +129,7 @@ func (irc *Connection) Disconnect() error {
 		irc.IsConnected = false
 
 		if !irc.restarting {
-			log.Printf("Server disconnected.\n")
+			log.Info("Server disconnected.")
 		}
 
 		return err
@@ -188,7 +189,7 @@ func (irc *Connection) readLoop() {
 			irc.lastMessageTime = time.Now()
 			msg = strings.Trim(msg, "\r\n")
 
-			log.Printf("[RECV]<< %s", msg)
+			log.Debugf("[RECV]<< %s", msg)
 
 			// Publish on broadcast channel
 			irc.broadcast.Write(irc.parseIRCMessage(msg))
@@ -206,7 +207,7 @@ func (irc *Connection) writeLoop() {
 				return
 			}
 
-			log.Printf("[SEND]>> %s", strings.Trim(b, "\r\n"))
+			log.Debugf("[SEND]>> %s", strings.Trim(b, "\r\n"))
 
 			_, err := irc.Socket.Write([]byte(b))
 			if err != nil {
