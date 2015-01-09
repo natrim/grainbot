@@ -161,7 +161,7 @@ func defaultHandlers(event *Message) {
 	case "PONG":
 		ns, _ := strconv.ParseInt(event.Arguments[1], 10, 64)
 		delta := time.Duration(time.Now().UnixNano() - ns)
-		log.Infof("Lag: %v\n", delta)
+		log.Infof("Lag: %v", delta)
 
 	case "PRIVMSG", "NOTICE":
 		if event.Arguments[0] == irc.currentNickname && len(event.Arguments[1]) > 2 && strings.HasPrefix(event.Arguments[1], "\x01") && strings.HasSuffix(event.Arguments[1], "\x01") { //ctcp

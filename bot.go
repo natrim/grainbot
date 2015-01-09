@@ -121,7 +121,7 @@ func (b *Bot) Run() {
 		if !b.restarting {
 			err = b.Config.Save()
 			if err != nil {
-				log.Fatal("Config save failed.", err)
+				log.Fatalf("Config save failed. %s", err)
 			} else {
 				log.Info("Config saved.")
 			}
@@ -175,13 +175,13 @@ func (b *Bot) Run() {
 			if !b.Connection.IsConnected {
 				return
 			}
-			log.Errorf("error: %s\n", err)
+			log.Errorf("error: %s", err)
 			log.Info("Reconnecting in 10 seconds...")
 			time.Sleep(10 * time.Second)
 
 			err = b.Connection.Reconnect()
 			if err != nil {
-				log.Errorf("error: %s\n", err)
+				log.Errorf("error: %s", err)
 			}
 		}
 	}()
@@ -217,7 +217,7 @@ func (b *Bot) beforeFork() error {
 	//save config right now
 	err := b.Config.Save()
 	if err != nil {
-		log.Fatal("Config save failed.", err)
+		log.Fatalf("Config save failed. %s", err)
 	}
 
 	return err
