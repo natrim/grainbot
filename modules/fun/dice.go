@@ -40,7 +40,7 @@ func throwDice(r *irc.Message, dice, faces int) {
 
 	result := diceRoll(dice, faces)
 	if result != "" {
-		r.Mention("you rolled: " + result)
+		r.Mentionf("you rolled %d-sided dice %d times and the result is: %s", dice, faces, result)
 	}
 }
 
