@@ -9,6 +9,7 @@ import (
 	"github.com/natrim/grainbot/modules"
 
 	human "github.com/dustin/go-humanize"
+	"strconv"
 )
 
 // precompile the command regexp
@@ -64,6 +65,6 @@ func InitSystem(mod *modules.Module) {
 	mod.AddResponse(statsreg, func(r *modules.Response) {
 		mem := &runtime.MemStats{}
 		runtime.ReadMemStats(mem)
-		r.Respond("last (re)start: " + human.Time(startTime) + ", sys memory: " + human.Bytes(mem.Sys))
+		r.Respond("PID: " + strconv.Itoa(syscall.Getpid()) + ", last (re)start: " + human.Time(startTime) + ", sys memory: " + human.Bytes(mem.Sys))
 	}, owner)
 }
