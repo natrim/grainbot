@@ -29,4 +29,7 @@ open:
 
 run: build open
 
-PHONY: build format run test clean install vet update lint
+release: format vet lint
+	GOOS=linux GOARCH=386 go build -o ./build/grainbot_linux
+
+PHONY: build format run test clean install vet update lint release

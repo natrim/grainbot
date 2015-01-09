@@ -22,7 +22,8 @@ type Configuration struct {
 	UserName string
 	RealName string
 
-	Owner string
+	Owner     string
+	UpdateUrl string
 
 	Modules map[string]interface{}
 
@@ -348,5 +349,5 @@ func (conf *Configuration) String() string {
 }
 
 func ExampleConfig() *Configuration {
-	return &Configuration{HostName: "irc.deltaanime.net", Owner: "Natrim", Modules: map[string]interface{}{"autojoin": map[string]interface{}{"channels": []string{"#pony"}}}}
+	return &Configuration{HostName: "irc.deltaanime.net", Owner: "Natrim", UpdateUrl: "http://natrim.cz/uploads/grainbot_linux", Modules: map[string]interface{}{"autojoin": map[string]interface{}{"channels": []string{"#pony"}}}}
 }

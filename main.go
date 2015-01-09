@@ -20,6 +20,7 @@ func main() {
 
 	//register modules
 	grainbot.RegisterModule(modules.NewModule("system", system.InitSystem, nil))
+	grainbot.RegisterModule(modules.NewModule("system-update", system.UpdateInit, nil))
 	grainbot.RegisterModule(modules.NewModule("autojoin", autojoin.Init, nil))
 	grainbot.RegisterModule(modules.NewModule("coin", fun.InitCoin, nil))
 	grainbot.RegisterModule(modules.NewModule("dice", fun.InitDice, nil))
