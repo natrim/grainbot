@@ -26,6 +26,7 @@ func UpdateInit(mod *modules.Module) {
 			return
 		}
 
+		log.Info("Update done!")
 		r.Respond("update done!")
 
 		//restart
