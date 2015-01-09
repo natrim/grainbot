@@ -128,14 +128,21 @@ func (irc *Connection) AddHandler(f func(*Message), permission permissions.Permi
 					return
 				}
 			case e := <-messages:
-				event := e.(*Message)
-				if permission != nil {
-					if ok := permission.Validate(event.Nick, event.User, event.Host); ok {
+				func() {
+					defer func() {
+						if r := recover(); r != nil {
+							log.Errorf("Event failure: %s", r)
+						}
+					}()
+					event := e.(*Message)
+					if permission != nil {
+						if ok := permission.Validate(event.Nick, event.User, event.Host); ok {
+							f(event)
+						}
+					} else {
 						f(event)
 					}
-				} else {
-					f(event)
-				}
+				}()
 			}
 		}
 	}()
