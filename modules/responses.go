@@ -24,19 +24,19 @@ func (m *Module) AddResponse(reg *regexp.Regexp, f func(*Response), permission p
 		case "PRIVMSG", "NOTICE":
 			nick := m.Server.CurrentNick()
 			text := strings.Join(m.Arguments[1:], " ")
-			if m.Arguments[0] == nick { //direct privmsg or asked from channel
+			if m.Arguments[0] == nick { //direct privmsg
 				if reg.MatchString(strings.Trim(text, " ")) {
 					f(&Response{m, text, reg.FindStringSubmatch(text)})
 				}
-			} else {
+			} else { //asked from channel
 				current, err := regexp.Compile("^" + nick + "[ ,;:]")
 				if err != nil {
 					log.Error("Failed to compile nick regexp: ", err)
 				} else if current.MatchString(text) {
 					nl := len(nick) + 1
 					if len(text) > nl {
-						just_text := text[nl:]
-						if reg.MatchString(strings.Trim(just_text, " ")) {
+						just_text := strings.Trim(text[nl:], " ")
+						if reg.MatchString(just_text) {
 							f(&Response{m, text, reg.FindStringSubmatch(just_text)})
 						}
 					}
