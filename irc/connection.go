@@ -220,24 +220,26 @@ func (irc *Connection) writeLoop() {
 
 //Pings the server if we have not recived any messages for 5 minutes
 func (irc *Connection) pingLoop() {
-	ticker := time.NewTicker(1 * time.Minute)   //Tick every minute.
-	ticker2 := time.NewTicker(15 * time.Minute) //Tick every 15 minutes.
+	ticker1 := time.NewTicker(1 * time.Minute)   //Tick every minute.
+	ticker15 := time.NewTicker(15 * time.Minute) //Tick every 15 minutes.
+	ticker60 := time.NewTicker(60 * time.Minute) //Tick every 60 minutes.
 	for {
 		select {
 		case <-irc.exit:
 			// Shut down everything
-			ticker.Stop()
-			ticker2.Stop()
+			ticker1.Stop()
+			ticker15.Stop()
+			ticker60.Stop()
 			return
-		case <-ticker.C:
+		case <-ticker1.C:
 			// Ping if we haven't received anything from the server within 4 minutes
 			if time.Since(irc.lastMessageTime) >= (4 * time.Minute) {
 				irc.SendRawf("PING %d", time.Now().UnixNano())
 			}
-		case <-ticker2.C:
+		case <-ticker15.C:
 			// Ping every 15 minutes.
 			irc.SendRawf("PING %d", time.Now().UnixNano())
-
+		case <-ticker60.C:
 			// Try to recapture nickname if it's not as configured.
 			if irc.Nickname != irc.currentNickname {
 				irc.currentNickname = irc.Nickname
