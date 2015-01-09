@@ -2,9 +2,13 @@ package system
 
 import (
 	"regexp"
+	"runtime"
 	"syscall"
+	"time"
 
 	"github.com/natrim/grainbot/modules"
+
+	human "github.com/dustin/go-humanize"
 )
 
 // precompile the command regexp
@@ -12,6 +16,13 @@ var quitreg = regexp.MustCompile("^quit$")
 var restartreg = regexp.MustCompile("^restart$")
 var joinpartreg = regexp.MustCompile("^(join|part)( #([^ ]*))?$")
 var nickreg = regexp.MustCompile("^nick ([^ ]*)$")
+var statsreg = regexp.MustCompile("^stats|mem(ory)?|uptime$")
+
+var startTime time.Time
+
+func init() {
+	startTime = time.Now()
+}
 
 // InitSystem register's dice commands on module load
 func InitSystem(mod *modules.Module) {
@@ -48,5 +59,11 @@ func InitSystem(mod *modules.Module) {
 	mod.AddResponse(nickreg, func(r *modules.Response) {
 		r.Server.Nick(r.Matches[1])
 		r.Respond("okey, " + r.Nick + "! Let'z talk as another pony!")
+	}, owner)
+
+	mod.AddResponse(statsreg, func(r *modules.Response) {
+		mem := &runtime.MemStats{}
+		runtime.ReadMemStats(mem)
+		r.Respond("last (re)start: " + human.Time(startTime) + ", sys memory: " + human.Bytes(mem.Sys))
 	}, owner)
 }
