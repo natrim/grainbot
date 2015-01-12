@@ -10,6 +10,7 @@ import (
 	"io"
 	"net"
 	"strings"
+	"sync"
 	"time"
 
 	log "github.com/Sirupsen/logrus"
@@ -38,6 +39,8 @@ type Connection struct {
 	broadcast *broadcast.Broadcaster // Channel like broadcasting of the irc messages
 	exit      chan struct{}          // Channel for notifying goroutine stop
 	ErrorChan chan error             // Channel for dumping errors
+
+	wg sync.WaitGroup //wait group for loops
 
 	lastMessage     string    //message received as raw string
 	lastMessageTime time.Time //time of last message received
@@ -107,6 +110,7 @@ func (irc *Connection) Connect() error {
 		irc.currentNickname = irc.Nickname
 		irc.IsConnected = true
 
+		irc.wg.Add(3)
 		go irc.readLoop()
 		go irc.writeLoop()
 		go irc.pingLoop()
@@ -137,6 +141,8 @@ func (irc *Connection) Disconnect() error {
 		if !irc.restarting {
 			log.Info("Server disconnected.")
 		}
+
+		irc.wg.Wait() //wait for loop's end's
 
 		return err
 	}
@@ -175,12 +181,10 @@ func (irc *Connection) SendRawf(format string, a ...interface{}) {
 //loops
 
 func (irc *Connection) readLoop() {
+	defer irc.wg.Done()
 	br := bufio.NewReaderSize(irc.Socket, 512)
-
 	for {
 		select {
-		case <-irc.exit:
-			return
 		default:
 			msg, err := br.ReadString('\n')
 
@@ -199,15 +203,16 @@ func (irc *Connection) readLoop() {
 
 			// Publish on broadcast channel
 			irc.broadcast.Write(irc.parseIRCMessage(msg))
+		case <-irc.exit:
+			return
 		}
 	}
 }
 
 func (irc *Connection) writeLoop() {
+	defer irc.wg.Done()
 	for {
 		select {
-		case <-irc.exit:
-			return
 		case b, ok := <-irc.write:
 			if !ok || b == "" || irc.Socket == nil {
 				return
@@ -226,23 +231,20 @@ func (irc *Connection) writeLoop() {
 				irc.ErrorChan <- err
 				return
 			}
+		case <-irc.exit:
+			return
 		}
 	}
 }
 
 //Pings the server if we have not recived any messages for 5 minutes
 func (irc *Connection) pingLoop() {
+	defer irc.wg.Done()
 	ticker1 := time.NewTicker(1 * time.Minute)   //Tick every minute.
 	ticker15 := time.NewTicker(15 * time.Minute) //Tick every 15 minutes.
 	ticker60 := time.NewTicker(60 * time.Minute) //Tick every 60 minutes.
 	for {
 		select {
-		case <-irc.exit:
-			// Shut down everything
-			ticker1.Stop()
-			ticker15.Stop()
-			ticker60.Stop()
-			return
 		case <-ticker1.C:
 			// Ping if we haven't received anything from the server within 4 minutes
 			if time.Since(irc.lastMessageTime) >= (4 * time.Minute) {
@@ -257,6 +259,12 @@ func (irc *Connection) pingLoop() {
 				irc.currentNickname = irc.Nickname
 				irc.SendRawf("NICK %s", irc.Nickname)
 			}
+		case <-irc.exit:
+			// Shut down everything
+			ticker1.Stop()
+			ticker15.Stop()
+			ticker60.Stop()
+			return
 		}
 	}
 }
