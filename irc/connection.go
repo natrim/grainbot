@@ -145,10 +145,10 @@ func (irc *Connection) Disconnect() error {
 }
 
 func (irc *Connection) cleanUp() {
+	close(irc.exit)
 	if irc.IsConnected {
 		close(irc.write)
 	}
-	close(irc.exit)
 }
 
 func (irc *Connection) Reconnect() error {
