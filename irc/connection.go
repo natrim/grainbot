@@ -41,7 +41,12 @@ type Connection struct {
 
 	lastMessage     string    //message received as raw string
 	lastMessageTime time.Time //time of last message received
-	currentNickname string    //current nick
+
+	// Internal counters for flood protection
+	badness  time.Duration
+	lastsent time.Time
+
+	currentNickname string //current nick
 }
 
 func NewConnection(nick, user, realname string) (irc *Connection) {
@@ -98,6 +103,7 @@ func (irc *Connection) Connect() error {
 
 		irc.lastMessage = ""
 		irc.lastMessageTime = time.Now()
+		irc.lastsent = time.Now()
 		irc.currentNickname = irc.Nickname
 		irc.IsConnected = true
 
@@ -207,6 +213,12 @@ func (irc *Connection) writeLoop() {
 				return
 			}
 
+			if t := irc.rateLimit(len(b)); t != 0 {
+				// sleep for the current line's time value before sending it
+				log.Infof("Message flood! Sleeping for %.2f secs.", t.Seconds())
+				<-time.After(t)
+			}
+
 			log.Debugf("[SEND]>> %s", strings.Trim(b, "\r\n"))
 
 			_, err := irc.Socket.Write([]byte(b))
@@ -247,6 +259,25 @@ func (irc *Connection) pingLoop() {
 			}
 		}
 	}
+}
+
+// Implement Hybrid's flood control algorithm to rate-limit outgoing lines.
+func (irc *Connection) rateLimit(chars int) time.Duration {
+	// Hybrid's algorithm allows for 2 seconds per line and an additional
+	// 1/120 of a second per character on that line.
+	linetime := 2*time.Second + time.Duration(chars)*time.Second/120
+	elapsed := time.Now().Sub(irc.lastsent)
+	if irc.badness += linetime - elapsed; irc.badness < 0 {
+		// negative badness times are badness...
+		irc.badness = 0
+	}
+	irc.lastsent = time.Now()
+	// If we've sent more than 10 second's worth of lines according to the
+	// calculation above, then we're at risk of "Excess Flood".
+	if irc.badness > 10*time.Second {
+		return linetime
+	}
+	return 0
 }
 
 func (irc *Connection) postConnect() {
