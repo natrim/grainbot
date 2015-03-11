@@ -7,21 +7,23 @@ import (
 	"strings"
 )
 
+const COMMAND_DELIMITER = "."
+
 type Command struct {
 	*irc.Message
 	Text string
 }
 
 func (m *Module) AddCommand(name string, f func(*Command), permission permissions.Permission) error {
-	name = "." + name
-	wrap := func(m *irc.Message) {
-		switch m.Command {
+	name = COMMAND_DELIMITER + name
+	wrap := func(message *irc.Message) {
+		switch message.Command {
 		case "PRIVMSG", "NOTICE":
-			nick := m.Server.CurrentNick()
-			text := strings.Join(m.Arguments[1:], " ")
-			if m.Arguments[0] != nick { //dot command from channel
+			nick := message.Server.CurrentNick()
+			text := strings.Join(message.Arguments[1:], " ")
+			if message.Arguments[0] != nick { //dot command from channel
 				if strings.HasPrefix(strings.Trim(text, " "), name) {
-					f(&Command{m, text})
+					f(&Command{message, text})
 				}
 			}
 		}
@@ -36,7 +38,7 @@ func (m *Module) AddCommand(name string, f func(*Command), permission permission
 }
 
 func (m *Module) RemoveCommand(name string) error {
-	name = "." + name
+	name = COMMAND_DELIMITER + name
 
 	if len(m.handlers) < 0 {
 		return errors.New("This module has no commands!")

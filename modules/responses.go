@@ -19,14 +19,14 @@ type Response struct {
 
 func (m *Module) AddResponse(reg *regexp.Regexp, f func(*Response), permission permissions.Permission) error {
 	name := reg.String()
-	wrap := func(m *irc.Message) {
-		switch m.Command {
+	wrap := func(message *irc.Message) {
+		switch message.Command {
 		case "PRIVMSG", "NOTICE":
-			nick := m.Server.CurrentNick()
-			text := strings.Join(m.Arguments[1:], " ")
-			if m.Arguments[0] == nick { //direct privmsg
+			nick := message.Server.CurrentNick()
+			text := strings.Join(message.Arguments[1:], " ")
+			if message.Arguments[0] == nick { //direct privmsg
 				if reg.MatchString(strings.Trim(text, " ")) {
-					f(&Response{m, text, reg.FindStringSubmatch(text)})
+					f(&Response{message, text, reg.FindStringSubmatch(text)})
 				}
 			} else { //asked from channel
 				current, err := regexp.Compile("^" + nick + "[ ,;:]")
@@ -37,7 +37,7 @@ func (m *Module) AddResponse(reg *regexp.Regexp, f func(*Response), permission p
 					if len(text) > nl {
 						just_text := strings.Trim(text[nl:], " ")
 						if reg.MatchString(just_text) {
-							f(&Response{m, text, reg.FindStringSubmatch(just_text)})
+							f(&Response{message, text, reg.FindStringSubmatch(just_text)})
 						}
 					}
 				}
