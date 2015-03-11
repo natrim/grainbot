@@ -348,6 +348,15 @@ func (conf *Configuration) String() string {
 	return string(cbuf)
 }
 
-func ExampleConfig() *Configuration {
-	return &Configuration{HostName: "irc.deltaanime.net", Owner: "Natrim", UpdateUrl: "http://natrim.cz/uploads/grainbot_linux", Modules: map[string]interface{}{"autojoin": map[string]interface{}{"channels": []string{"#pony"}}}}
+func (conf *Configuration) LoadExampleConfig() {
+	conf.HostName = "irc.deltaanime.net"
+	conf.Owner = "Natrim"
+	conf.UpdateUrl = "http://natrim.cz/uploads/grainbot_linux"
+	conf.Modules = map[string]interface{}{"autojoin": map[string]interface{}{"channels": []string{"#pony"}}}
+}
+
+func NewExampleConfiguration() *Configuration {
+	conf := NewConfiguration()
+	conf.LoadExampleConfig()
+	return conf
 }
