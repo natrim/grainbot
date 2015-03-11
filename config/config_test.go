@@ -18,7 +18,7 @@ func init() {
 func TestLoad(t *testing.T) {
 	//t.Fail()
 
-	if err := ioutil.WriteFile(filepath.Join(path, "test_load.json"), []byte(ExampleConfig().String()), 0664); err != nil {
+	if err := ioutil.WriteFile(filepath.Join(path, "test_load.json"), []byte(NewExampleConfiguration().String()), 0664); err != nil {
 		t.Log("Nelze vytvořit testovací configurák!")
 		t.Log(err)
 		t.Fail()
@@ -35,7 +35,7 @@ func TestLoad(t *testing.T) {
 		return
 	}
 
-	if conf.String() != ExampleConfig().String() {
+	if conf.String() != NewExampleConfiguration().String() {
 		t.Log("Chyba načtení configu!")
 		t.Fail()
 		return
@@ -45,7 +45,7 @@ func TestLoad(t *testing.T) {
 func TestSave(t *testing.T) {
 	//t.Fail()
 
-	err := SaveConfigToFile(ExampleConfig(), "test_save.json")
+	err := SaveConfigToFile(NewExampleConfiguration(), "test_save.json")
 
 	if err != nil {
 		t.Log("Nelze uložit config!")
@@ -64,7 +64,7 @@ func TestSave(t *testing.T) {
 		return
 	}
 
-	if string(data) != ExampleConfig().String() {
+	if string(data) != NewExampleConfiguration().String() {
 		t.Log("Chyba uložení configu!")
 		t.Fail()
 		return
@@ -72,7 +72,7 @@ func TestSave(t *testing.T) {
 }
 
 func TestSelfLoad(t *testing.T) {
-	conf := ExampleConfig()
+	conf := NewExampleConfiguration()
 	conf.HostName = "pony"
 	conf.SaveToFile("test_selfload.json")
 	defer os.Remove("test_selfload.json")
@@ -94,7 +94,7 @@ func TestSelfLoad(t *testing.T) {
 func TestModuleThings(t *testing.T) {
 	//t.Fail()
 
-	conf := ExampleConfig()
+	conf := NewExampleConfiguration()
 	conf.Set("test1.string", "stringvalue")
 	conf.Set("test2.number", 1337)
 	conf.Set("test3.one", "one")

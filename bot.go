@@ -77,7 +77,7 @@ func (b *Bot) Run() {
 			}
 
 			log.Info("Generating example config.")
-			b.Config = config.ExampleConfig()
+			b.Config.LoadExampleConfig()
 		}
 		log.Info("Config loaded.")
 
