@@ -13,6 +13,7 @@ import (
 	"sync"
 )
 
+// Configuration struct
 type Configuration struct {
 	filepath string
 	HostName string
@@ -30,10 +31,12 @@ type Configuration struct {
 	sync.RWMutex
 }
 
+// NewConfiguration returns empty Configurations instance
 func NewConfiguration() *Configuration {
 	return &Configuration{}
 }
 
+// LoadFromFile loads configuration from file
 func (conf *Configuration) LoadFromFile(file string) error {
 	var pathToConfig string
 	var err error
@@ -96,20 +99,24 @@ func (conf *Configuration) LoadFromFile(file string) error {
 	return nil
 }
 
+// Load loads configuration from default file
 func (conf *Configuration) Load() error {
 	return conf.LoadFromFile("")
 }
 
+// LoadConfigFromFile returns new Configuration instance loaded from file
 func LoadConfigFromFile(file string) (*Configuration, error) {
 	conf := &Configuration{}
 	return conf, conf.LoadFromFile(file)
 }
 
+// LoadConfig returns new Configuration instance loaded from default file
 func LoadConfig() (*Configuration, error) {
 	conf := &Configuration{}
 	return conf, conf.LoadFromFile("")
 }
 
+// SaveToFile saves configuration to file
 func (conf *Configuration) SaveToFile(file string) error {
 	if conf == nil {
 		return errors.New("I need valid Configuration to save!")
@@ -158,18 +165,22 @@ func (conf *Configuration) SaveToFile(file string) error {
 	return nil
 }
 
+// SaveConfigToFile saves configuration to file
 func SaveConfigToFile(conf *Configuration, file string) error {
 	return conf.SaveToFile(file)
 }
 
+// Save saves configuration to default file
 func (conf *Configuration) Save() error {
 	return conf.SaveToFile("")
 }
 
+// SaveConfig saves Configuration to default file
 func SaveConfig(conf *Configuration) error {
 	return conf.SaveToFile("")
 }
 
+// Set module config value
 func (conf *Configuration) Set(key string, value interface{}) error {
 	conf.Lock()
 	defer conf.Unlock()
@@ -200,6 +211,7 @@ func (conf *Configuration) Set(key string, value interface{}) error {
 	return nil
 }
 
+// Get module config
 func (conf *Configuration) Get(key string) (interface{}, error) {
 	conf.RLock()
 	defer conf.RUnlock()
@@ -220,6 +232,7 @@ func (conf *Configuration) Get(key string) (interface{}, error) {
 	return ret.(map[string]interface{})[keys[1]], nil
 }
 
+// GetString module config value
 func (conf *Configuration) GetString(key string) string {
 	ret, _ := conf.Get(key)
 
@@ -239,6 +252,7 @@ func (conf *Configuration) GetString(key string) string {
 	}
 }
 
+// GetInt module config value
 func (conf *Configuration) GetInt(key string) int {
 	ret, _ := conf.Get(key)
 
@@ -275,6 +289,7 @@ func (conf *Configuration) GetInt(key string) int {
 	}
 }
 
+// GetBool module config value
 func (conf *Configuration) GetBool(key string) bool {
 	ret, _ := conf.Get(key)
 
@@ -299,6 +314,7 @@ func (conf *Configuration) GetBool(key string) bool {
 	}
 }
 
+// GetStringSlice module config value
 func (conf *Configuration) GetStringSlice(key string) []string {
 	ret, _ := conf.Get(key)
 
@@ -335,6 +351,7 @@ func (conf *Configuration) GetStringSlice(key string) []string {
 	}
 }
 
+// String returns configuration as json encoded string
 func (conf *Configuration) String() string {
 	conf.RLock()
 	defer conf.RUnlock()
@@ -348,6 +365,7 @@ func (conf *Configuration) String() string {
 	return string(cbuf)
 }
 
+// LoadExampleConfig loads example config
 func (conf *Configuration) LoadExampleConfig() {
 	conf.HostName = "irc.deltaanime.net"
 	conf.Owner = "Natrim"
@@ -355,6 +373,7 @@ func (conf *Configuration) LoadExampleConfig() {
 	conf.Modules = map[string]interface{}{"autojoin": map[string]interface{}{"channels": []string{"#pony"}}}
 }
 
+// NewExampleConfiguration returns new Configuration instance with example values
 func NewExampleConfiguration() *Configuration {
 	conf := NewConfiguration()
 	conf.LoadExampleConfig()

@@ -4,7 +4,12 @@ package bot
 type Bot struct {
 }
 
-// NewBot return's bot instance
+// NewBot returns bot instance
 func NewBot() *Bot {
 	return &Bot{}
+}
+
+// Run starts the bot and blocks until death of the bot
+func (bot *Bot) Run() {
+
 }

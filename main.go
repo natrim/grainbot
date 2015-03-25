@@ -6,7 +6,7 @@ import (
 )
 
 func main() {
-	if runtime.NumCPU() >= 2 { //if enough cpu's then use
+	if runtime.NumCPU() >= 2 { //if enough cpu then use
 		runtime.GOMAXPROCS(2) //two of them
 	}
 

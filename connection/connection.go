@@ -19,6 +19,7 @@ var (
 	err_noServer         error = errors.New("No server found!")
 )
 
+// Connection struct
 type Connection struct {
 	sock net.Conn
 
@@ -35,7 +36,7 @@ type Connection struct {
 	wg   sync.WaitGroup
 }
 
-// NewConnection return's new connection instance
+// NewConnection returns new connection instance
 func NewConnection() *Connection {
 	return &Connection{}
 }
@@ -46,7 +47,7 @@ func (conn *Connection) Connect() error {
 	defer conn.mu.Unlock()
 
 	if !hasPort(conn.server) {
-		conn.server = net.JoinHostPort(conn.Server, "6697")
+		conn.server = net.JoinHostPort(conn.server, "6697")
 	}
 
 	if !conn.isConnected {
@@ -78,6 +79,7 @@ func (conn *Connection) Connect() error {
 	return err_alreadyConnected
 }
 
+// ConnectTo connects to server with server string: server.example.com[:port]
 func (conn *Connection) ConnectTo(server string) error {
 	if server == nil {
 		return err_noServer
@@ -86,6 +88,7 @@ func (conn *Connection) ConnectTo(server string) error {
 	return conn.Connect()
 }
 
+// ConnectWith connects to server using defined socket
 func (conn *Connection) ConnectWith(sock *net.Conn) error {
 	if sock == nil {
 		return err_noSocket
@@ -95,22 +98,26 @@ func (conn *Connection) ConnectWith(sock *net.Conn) error {
 	return conn.Connect()
 }
 
+// Connected returns true if the bot is connected to server
 func (conn *Connection) Connected() bool {
 	conn.mu.RLock()
 	defer conn.mu.RUnlock()
 	return conn.isConnected
 }
 
+// initialise prepares variables
 func (conn *Connection) initialise() {
 	conn.sock = nil
 	conn.exit = make(chan struct{})
 }
 
+// GetNick returns current bot nick
 func (conn *Connection) GetNick() string {
 	return conn.currentNick
 }
 
 // copied from http.client
+// hasPort returns true if string contains port
 func hasPort(s string) bool {
 	return strings.LastIndex(s, ":") > strings.LastIndex(s, "]")
 }
