@@ -8,8 +8,8 @@ import (
 	log "github.com/Sirupsen/logrus"
 
 	"crypto/tls"
-	"fmt"
 	"strings"
+	"time"
 )
 
 var (
@@ -17,28 +17,43 @@ var (
 	err_alreadyConnected error = errors.New("Already connected to server!")
 	err_noSocket         error = errors.New("No socket found!")
 	err_noServer         error = errors.New("No server found!")
+	err_Disconnected     error = errors.New("Disconnected!")
 )
 
 // Connection struct
 type Connection struct {
-	sock net.Conn
+	sync.WaitGroup //the loop's waiting group
 
-	mu sync.RWMutex
+	socket net.Conn //socket
 
-	isConnected  bool
-	isRestarting bool
+	mu sync.RWMutex //connection lock
 
-	server          string
-	serverIsSecured bool
-	currentNick     string
+	isConnected  bool //the connection should be ready
+	isRestarting bool //the connection is restarting from connected socket
 
-	exit chan struct{}
-	wg   sync.WaitGroup
+	nick            string // the nick we should have
+	server          string //server host:port
+	serverIsSecured bool   //server use ssl
+	currentNick     string //the nick the bot currently posses
+
+	error chan error    //chan for error logging
+	write chan string   //chan for writing to socket
+	exit  chan struct{} //chan for signaling the loops to stop
+
+	Log *log.Logger //logger
+
+	KeepAlive time.Duration // how long to keep connection alive
+	Timeout   time.Duration // timeout
+	PingFreq  time.Duration // ping every
+
+	lastMessage time.Time     //time of last received message
+	badness     time.Duration //antiflood
+	lastSent    time.Time     //antiflood
 }
 
 // NewConnection returns new connection instance
 func NewConnection() *Connection {
-	return &Connection{}
+	return &Connection{Log: log.New()}
 }
 
 // Connect will connect to defined server
@@ -46,11 +61,17 @@ func (conn *Connection) Connect() error {
 	conn.mu.Lock()
 	defer conn.mu.Unlock()
 
+	if conn.server == "" {
+		return err_noServer
+	}
+
 	if !hasPort(conn.server) {
 		conn.server = net.JoinHostPort(conn.server, "6697")
 	}
 
 	if !conn.isConnected {
+		conn.initialise()
+
 		var err error
 		if conn.isRestarting {
 			if conn.serverIsSecured {
@@ -58,20 +79,29 @@ func (conn *Connection) Connect() error {
 			} else {
 				log.Debugf("Reusing connection to tcp://%s", conn.server)
 			}
-			if conn.sock == nil {
+			if conn.socket == nil {
 				err = err_noSocket
 			}
 		} else {
+			d := net.Dialer{Timeout: conn.Timeout}
 			if conn.serverIsSecured {
 				log.Debugf("Connecting to tls://%s", conn.server)
-				conn.sock, err = tls.Dial("tcp", conn.server, nil)
+				conn.socket, err = tls.DialWithDialer(&d, "tcp", conn.server, nil)
 			} else {
 				log.Debugf("Connecting to tcp://%s", conn.server)
-				conn.sock, err = net.Dial("tcp", conn.server)
+				conn.socket, err = d.Dial("tcp", conn.server)
 			}
 		}
 
-		log.Infof("Connected to %s (%s)", conn.server, conn.sock.RemoteAddr())
+		log.Infof("Connected to %s (%s)", conn.server, conn.socket.RemoteAddr())
+		conn.isConnected = true
+
+		conn.write = make(chan string, 10)
+		conn.error = make(chan error, 2)
+		conn.Add(3)
+		go conn.readLoop()
+		go conn.writeLoop()
+		go conn.pingLoop()
 
 		return err
 	}
@@ -81,7 +111,7 @@ func (conn *Connection) Connect() error {
 
 // ConnectTo connects to server with server string: server.example.com[:port]
 func (conn *Connection) ConnectTo(server string) error {
-	if server == nil {
+	if server == "" {
 		return err_noServer
 	}
 	conn.server = server
@@ -89,11 +119,12 @@ func (conn *Connection) ConnectTo(server string) error {
 }
 
 // ConnectWith connects to server using defined socket
-func (conn *Connection) ConnectWith(sock *net.Conn) error {
+func (conn *Connection) ConnectWith(sock net.Conn) error {
 	if sock == nil {
 		return err_noSocket
 	}
-	conn.sock = sock
+	conn.socket = sock
+	conn.server = sock.RemoteAddr().String()
 	conn.isRestarting = true
 	return conn.Connect()
 }
@@ -105,15 +136,42 @@ func (conn *Connection) Connected() bool {
 	return conn.isConnected
 }
 
+// Disconnect from server
+func (conn *Connection) Disconnect() {
+	close(conn.exit)
+	conn.Wait()
+	conn.socket.Close()
+	conn.socket = nil
+	conn.ErrorChan() <- err_Disconnected
+}
+
+// Reconnect to a server using the current connection
+func (conn *Connection) Reconnect() error {
+	conn.isConnected = false
+	conn.isRestarting = true
+	return conn.Connect()
+}
+
 // initialise prepares variables
 func (conn *Connection) initialise() {
-	conn.sock = nil
+	if conn.KeepAlive == 0 {
+		conn.KeepAlive = 4 * time.Minute
+	}
+	if conn.Timeout == 0 {
+		conn.Timeout = 1 * time.Minute
+	}
+	if conn.PingFreq == 0 {
+		conn.PingFreq = 15 * time.Minute
+	}
+	if !conn.isRestarting {
+		conn.socket = nil
+	}
 	conn.exit = make(chan struct{})
 }
 
-// GetNick returns current bot nick
-func (conn *Connection) GetNick() string {
-	return conn.currentNick
+// ErrorChan returns channel for error handling
+func (conn *Connection) ErrorChan() chan error {
+	return conn.error
 }
 
 // copied from http.client
