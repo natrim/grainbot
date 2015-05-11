@@ -15,13 +15,16 @@ install:
 format:
 	go fmt ./...
 
+simplify:
+	gofmt -l -w -s ./**/*.go
+
 vet:
 	go vet ./...
 
 lint:
 	golint .
 
-build: format vet lint
+build: clean simplify format vet lint
 	go build -o ./build/grainbot
 
 open:
@@ -29,7 +32,7 @@ open:
 
 run: build open
 
-release: format vet lint
+release: clean simplify format vet lint test
 	GOOS=linux GOARCH=386 go build -o ./build/grainbot_linux
 
-.PHONY: build format run test clean install vet update lint release
+.PHONY: build format run test clean install vet update lint release simplify
