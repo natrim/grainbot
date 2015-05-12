@@ -1,16 +1,17 @@
 default: build
 
 clean:
-	rm -r ./build
+	-rm -r ./build
+	gopm clean -v
 
 test:
-	go test ./...
+	gopm test ./...
 
 update:
-	go get -u -t ./...
+	gopm update -v
 
 install:
-	go install
+	gopm install -v
 
 format:
 	go fmt ./...
@@ -24,15 +25,16 @@ vet:
 lint:
 	golint .
 
-build: clean simplify format vet lint
-	go build -o ./build/grainbot
+build: simplify format vet lint
+	#go build -o ./build/grainbot
+	gopm build -o ./build/grainbot
 
 open:
 	./build/grainbot
 
 run: build open
 
-release: clean simplify format vet lint test
+release: simplify format vet lint test
 	GOOS=linux GOARCH=386 go build -o ./build/grainbot_linux
 
 .PHONY: build format run test clean install vet update lint release simplify

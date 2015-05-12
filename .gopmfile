@@ -1,0 +1,9 @@
+[target]
+path = github.com/natrim/grainbot
+
+[deps]
+github.com/kardianos/osext = branch:master
+github.com/Sirupsen/logrus = branch:master
+
+[res]
+include = 
