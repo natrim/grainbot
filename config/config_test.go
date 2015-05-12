@@ -1,7 +1,7 @@
 package config_test
 
 import (
-	"bitbucket.org/kardianos/osext"
+	"github.com/kardianos/osext"
 	. "github.com/natrim/grainbot/config"
 	"io/ioutil"
 	"os"

@@ -1,10 +1,10 @@
 package config
 
 import (
-	"bitbucket.org/kardianos/osext"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/kardianos/osext"
 	"io/ioutil"
 	"os"
 	"path/filepath"
