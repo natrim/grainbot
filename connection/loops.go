@@ -11,17 +11,18 @@ import (
 func (irc *Connection) readLoop() {
 	defer irc.wg.Done()
 	defer log.Debug("end readLoop")
-	br := bufio.NewReaderSize(irc.socket, 512)
 
 	errChan := irc.ErrorChan()
 
 	log.Debug("start readLoop")
 
-	for {
-		select {
-		case <-irc.exit:
-			return
-		default:
+	//helper socket gouroutine
+	go func() {
+		br := bufio.NewReaderSize(irc.socket, 512)
+		for {
+			if irc.socket == nil {
+				return
+			}
 			// Set a read deadline based on the combined timeout and ping frequency - We should ALWAYS have received a response from the server within the timeout after our own pings
 			if irc.socket != nil {
 				irc.socket.SetReadDeadline(time.Now().Add(irc.Timeout + irc.PingFreq))
@@ -37,7 +38,23 @@ func (irc *Connection) readLoop() {
 
 			if err != nil {
 				errChan <- err
-				break
+				return
+			}
+
+			irc.read <- msg
+		}
+	}()
+
+	for {
+		if irc.socket == nil {
+			return
+		}
+		select {
+		case <-irc.exit:
+			return
+		case msg, ok := <-irc.read:
+			if !ok || msg == "" {
+				return
 			}
 
 			log.Debugf("[RECV] %s", strings.TrimSpace(msg))
@@ -50,7 +67,7 @@ func (irc *Connection) readLoop() {
 					event.Source = msg[1:i]
 					msg = msg[i+1:]
 				} else {
-					log.Infof("Misformed msg from server: %#s\n", msg)
+					log.Infof("Misformed msg from server: %#s", msg)
 				}
 
 				if i, j := strings.Index(event.Source, "!"), strings.Index(event.Source, "@"); i > -1 && j > -1 {
@@ -86,12 +103,14 @@ func (irc *Connection) writeLoop() {
 	errChan := irc.ErrorChan()
 	log.Debug("start writeLoop")
 	for {
+		if irc.socket == nil {
+			return
+		}
 		select {
 		case <-irc.exit:
 			return
-		default:
-			b, ok := <-irc.write
-			if !ok || b == "" || irc.socket == nil {
+		case b, ok := <-irc.write:
+			if !ok || b == "" {
 				return
 			}
 
@@ -123,6 +142,9 @@ func (irc *Connection) pingLoop() {
 	ticker2 := time.NewTicker(irc.PingFreq)   // Tick at the ping frequency.
 	log.Debug("start pingLoop")
 	for {
+		if irc.socket == nil {
+			return
+		}
 		select {
 		case <-ticker.C:
 			//Ping if we haven't received anything from the server within the keep alive period
@@ -147,13 +169,14 @@ func (irc *Connection) pingLoop() {
 // Wait for connection end
 func (irc *Connection) Wait() {
 	log.Debug("Waiting for connection end")
+	defer log.Debug("Connection end")
 	errChan := irc.ErrorChan()
 	for irc.Connected() {
 		err := <-errChan
 		if !irc.Connected() {
 			break
 		}
-		log.Printf("Error, disconnected: %s\n", err)
+		log.Printf("Error, disconnected: %s", err)
 		return
 
 		//TODO: reconnect

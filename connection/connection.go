@@ -38,6 +38,7 @@ type Connection struct {
 
 	error chan error    //chan for error logging
 	write chan string   //chan for writing to socket
+	read  chan string   //chan for reading from socket
 	exit  chan struct{} //chan for signaling the loops to stop
 
 	KeepAlive time.Duration // how long to keep connection alive
@@ -95,6 +96,7 @@ func (conn *Connection) Connect() error {
 		conn.isConnected = true
 
 		conn.write = make(chan string, 10)
+		conn.read = make(chan string, 10)
 		conn.error = make(chan error, 2)
 		conn.wg.Add(3)
 		go conn.readLoop()
@@ -151,7 +153,9 @@ func (conn *Connection) Disconnect() {
 	conn.wg.Wait()
 	conn.socket.Close()
 	conn.socket = nil
-	conn.ErrorChan() <- err_Disconnected
+	conn.isConnected = false
+	//conn.ErrorChan() <- err_Disconnected
+	log.Info("Disconnected")
 }
 
 // Reconnect to a server using the current connection

@@ -4,6 +4,8 @@ import (
 	log "github.com/Sirupsen/logrus"
 	"github.com/natrim/grainbot/config"
 	"github.com/natrim/grainbot/connection"
+	"os"
+	"os/signal"
 )
 
 // Bot struct
@@ -33,6 +35,13 @@ func (bot *Bot) Run() {
 		log.Fatalln(err)
 		return
 	}
+
+	c := make(chan os.Signal, 1)
+	signal.Notify(c, os.Interrupt)
+	go func() {
+		<-c
+		bot.Connection.Disconnect()
+	}()
 
 	bot.Connection.Wait() //run until death of connection
 }
