@@ -2,16 +2,20 @@ package connection
 
 import (
 	"bufio"
+	log "github.com/Sirupsen/logrus"
 	"strings"
 	"time"
 )
 
 // Read data from a connection. To be used as a goroutine.
 func (irc *Connection) readLoop() {
-	defer irc.Done()
+	defer irc.wg.Done()
+	defer log.Debug("end readLoop")
 	br := bufio.NewReaderSize(irc.socket, 512)
 
 	errChan := irc.ErrorChan()
+
+	log.Debug("start readLoop")
 
 	for {
 		select {
@@ -36,7 +40,7 @@ func (irc *Connection) readLoop() {
 				break
 			}
 
-			irc.Log.Debugf("[RECV] %s\n", strings.TrimSpace(msg))
+			log.Debugf("[RECV] %s", strings.TrimSpace(msg))
 
 			irc.lastMessage = time.Now()
 			msg = msg[:len(msg)-2] //Remove \r\n
@@ -46,7 +50,7 @@ func (irc *Connection) readLoop() {
 					event.Source = msg[1:i]
 					msg = msg[i+1:]
 				} else {
-					irc.Log.Infof("Misformed msg from server: %#s\n", msg)
+					log.Infof("Misformed msg from server: %#s\n", msg)
 				}
 
 				if i, j := strings.Index(event.Source, "!"), strings.Index(event.Source, "@"); i > -1 && j > -1 {
@@ -64,18 +68,23 @@ func (irc *Connection) readLoop() {
 				event.Arguments = append(event.Arguments, split[1])
 			}
 
+			//TODO: handle events
 			if event.Code == "NICK" && irc.currentNick == event.Nick { //itz us changing nick
 				irc.currentNick = event.Arguments[0]
+			} else if event.Code == "PING" { //reply to ping
+				irc.SendRawf("PONG %s", event.Arguments[len(event.Arguments)-1])
 			}
-			//TODO: handle event
+
 		}
 	}
 }
 
 // Loop to write to a connection. To be used as a goroutine.
 func (irc *Connection) writeLoop() {
-	defer irc.Done()
+	defer irc.wg.Done()
+	defer log.Debug("end writeLoop")
 	errChan := irc.ErrorChan()
+	log.Debug("start writeLoop")
 	for {
 		select {
 		case <-irc.exit:
@@ -86,7 +95,7 @@ func (irc *Connection) writeLoop() {
 				return
 			}
 
-			irc.Log.Debugf("[WRITE] %s\n", strings.TrimSpace(b))
+			log.Debugf("[WRITE] %s", strings.TrimSpace(b))
 
 			// Set a write deadline based on the time out
 			irc.socket.SetWriteDeadline(time.Now().Add(irc.Timeout))
@@ -108,9 +117,11 @@ func (irc *Connection) writeLoop() {
 // Pings the server if we have not received any messages for 5 minutes
 // to keep the connection alive. To be used as a goroutine.
 func (irc *Connection) pingLoop() {
-	defer irc.Done()
+	defer irc.wg.Done()
+	defer log.Debug("end pingLoop")
 	ticker := time.NewTicker(1 * time.Minute) // Tick every minute for monitoring
 	ticker2 := time.NewTicker(irc.PingFreq)   // Tick at the ping frequency.
+	log.Debug("start pingLoop")
 	for {
 		select {
 		case <-ticker.C:
@@ -133,22 +144,26 @@ func (irc *Connection) pingLoop() {
 	}
 }
 
-// Main loop to control the connection.
-func (irc *Connection) Loop() {
+// Wait for connection end
+func (irc *Connection) Wait() {
+	log.Debug("Waiting for connection end")
 	errChan := irc.ErrorChan()
 	for irc.Connected() {
 		err := <-errChan
 		if !irc.Connected() {
 			break
 		}
-		irc.Log.Printf("Error, disconnected: %s\n", err)
-		for irc.Connected() {
-			if err = irc.Reconnect(); err != nil {
-				irc.Log.Printf("Error while reconnecting: %s\n", err)
+		log.Printf("Error, disconnected: %s\n", err)
+		return
+
+		//TODO: reconnect
+		/*for irc.Connected() {
+			if err = irc.Reconnect(); err != nil { //FIX: not working it sends the error to error chan
+				log.Printf("Error while reconnecting: %s\n", err)
 				time.Sleep(5 * time.Second)
 			} else {
 				break
 			}
-		}
+		}*/
 	}
 }

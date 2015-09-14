@@ -26,7 +26,6 @@ lint:
 	golint .
 
 build: simplify format vet lint
-	#go build -o ./build/grainbot
 	gopm build -o ./build/grainbot
 
 open:

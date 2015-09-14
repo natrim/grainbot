@@ -8,6 +8,7 @@ import (
 )
 
 var debug = flag.Bool("debug", false, "Print debug messages?")
+var createConfig = flag.Bool("config", false, "Create new grain config?")
 
 func init() {
 	flag.Parse()
@@ -19,10 +20,13 @@ func init() {
 }
 
 func main() {
-	if runtime.NumCPU() >= 2 { //if enough cpu then use
-		runtime.GOMAXPROCS(2) //two of them
-	}
+	runtime.GOMAXPROCS(runtime.NumCPU()) //use all cpu's
 
 	grainbot := bot.NewBot()
+	if *createConfig == true {
+		log.Debug("Loading example configuration to grain")
+		grainbot.GetConfig().LoadExampleConfig()
+	}
+	log.Debug("Starting grain")
 	grainbot.Run()
 }

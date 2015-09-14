@@ -22,7 +22,7 @@ var (
 
 // Connection struct
 type Connection struct {
-	sync.WaitGroup //the loop's waiting group
+	wg sync.WaitGroup //the loop's waiting group
 
 	socket net.Conn //socket
 
@@ -40,8 +40,6 @@ type Connection struct {
 	write chan string   //chan for writing to socket
 	exit  chan struct{} //chan for signaling the loops to stop
 
-	Log *log.Logger //logger
-
 	KeepAlive time.Duration // how long to keep connection alive
 	Timeout   time.Duration // timeout
 	PingFreq  time.Duration // ping every
@@ -53,7 +51,7 @@ type Connection struct {
 
 // NewConnection returns new connection instance
 func NewConnection() *Connection {
-	return &Connection{Log: log.New()}
+	return &Connection{nick: "grainbot"}
 }
 
 // Connect will connect to defined server
@@ -98,15 +96,26 @@ func (conn *Connection) Connect() error {
 
 		conn.write = make(chan string, 10)
 		conn.error = make(chan error, 2)
-		conn.Add(3)
+		conn.wg.Add(3)
 		go conn.readLoop()
 		go conn.writeLoop()
 		go conn.pingLoop()
+
+		time.AfterFunc(time.Second, conn.login) //delay by sec
 
 		return err
 	}
 
 	return err_alreadyConnected
+}
+
+func (conn *Connection) login() {
+	/*if len(conn.Password) > 0 {
+		conn.SendRawf("PASS %s", irc.Password)
+	}*/
+
+	conn.Nick(conn.nick)
+	conn.SendRawf("USER %s 0.0.0.0 0.0.0.0 :%s", "grainbot", "GRAIN_BOT_V1")
 }
 
 // ConnectTo connects to server with server string: server.example.com[:port]
@@ -139,7 +148,7 @@ func (conn *Connection) Connected() bool {
 // Disconnect from server
 func (conn *Connection) Disconnect() {
 	close(conn.exit)
-	conn.Wait()
+	conn.wg.Wait()
 	conn.socket.Close()
 	conn.socket = nil
 	conn.ErrorChan() <- err_Disconnected
