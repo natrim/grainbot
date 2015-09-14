@@ -4,6 +4,7 @@ path = github.com/natrim/grainbot
 [deps]
 github.com/kardianos/osext = branch:master
 github.com/Sirupsen/logrus = branch:master
+github.com/spf13/cast = branch:master
 
 [res]
 include = 

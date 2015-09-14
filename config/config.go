@@ -5,19 +5,19 @@ import (
 	"errors"
 	"fmt"
 	"github.com/kardianos/osext"
+	"github.com/spf13/cast"
 	"io/ioutil"
 	"os"
 	"path/filepath"
-	"strconv"
 	"strings"
 	"sync"
+	"time"
 )
 
 // Configuration struct
 type Configuration struct {
 	filepath string
-	HostName string
-	Port     int
+	Server   string
 	SSL      bool
 	Nick     string
 	UserName string
@@ -194,10 +194,12 @@ func (conf *Configuration) Set(key string, value interface{}) error {
 
 	switch value.(type) {
 	case string:
-	case []string:
-	case int:
+	case []string, []int:
+	case int, int8, int16, int32, int64:
+	case float32, float64:
 	case nil:
 	case bool:
+	case time.Time:
 	default:
 		return errors.New(fmt.Sprintf("%s %T", "Unsupported type! ", value))
 	}
@@ -233,122 +235,84 @@ func (conf *Configuration) Get(key string) (interface{}, error) {
 }
 
 // GetString module config value
-func (conf *Configuration) GetString(key string) string {
-	ret, _ := conf.Get(key)
+func (conf *Configuration) GetString(key string) (string, error) {
+	ret, err := conf.Get(key)
 
-	switch s := ret.(type) {
-	case string:
-		return s
-	case float64:
-		return strconv.FormatFloat(ret.(float64), 'f', -1, 64)
-	case int:
-		return strconv.FormatInt(int64(ret.(int)), 10)
-	case []byte:
-		return string(s)
-	case nil:
-		return ""
-	default:
-		return ""
+	if err != nil {
+		return "", err
 	}
+
+	return cast.ToStringE(ret)
 }
 
 // GetInt module config value
-func (conf *Configuration) GetInt(key string) int {
-	ret, _ := conf.Get(key)
+func (conf *Configuration) GetInt(key string) (int, error) {
+	ret, err := conf.Get(key)
 
-	switch s := ret.(type) {
-	case int:
-		return s
-	case int64:
-		return int(s)
-	case int32:
-		return int(s)
-	case int16:
-		return int(s)
-	case int8:
-		return int(s)
-	case string:
-		v, err := strconv.ParseInt(s, 0, 0)
-		if err == nil {
-			return int(v)
-		} else {
-			return 0
-		}
-	case float64:
-		return int(s)
-	case bool:
-		if bool(s) {
-			return 1
-		} else {
-			return 0
-		}
-	case nil:
-		return 0
-	default:
-		return 0
+	if err != nil {
+		return 0, err
 	}
+
+	return cast.ToIntE(ret)
+}
+
+// GetFloat module config value
+func (conf *Configuration) GetFloat(key string) (float64, error) {
+	ret, err := conf.Get(key)
+
+	if err != nil {
+		return 0.0, err
+	}
+
+	return cast.ToFloat64E(ret)
 }
 
 // GetBool module config value
-func (conf *Configuration) GetBool(key string) bool {
-	ret, _ := conf.Get(key)
+func (conf *Configuration) GetBool(key string) (bool, error) {
+	ret, err := conf.Get(key)
 
-	switch b := ret.(type) {
-	case bool:
-		return b
-	case nil:
-		return false
-	case int:
-		if ret.(int) > 0 {
-			return true
-		}
-		return false
-	case string:
-		ret1, err := strconv.ParseBool(ret.(string))
-		if err != nil {
-			return false
-		}
-		return ret1
-	default:
-		return false
+	if err != nil {
+		return false, err
 	}
+
+	return cast.ToBoolE(ret)
 }
 
 // GetStringSlice module config value
-func (conf *Configuration) GetStringSlice(key string) []string {
-	ret, _ := conf.Get(key)
+func (conf *Configuration) GetStringSlice(key string) ([]string, error) {
+	ret, err := conf.Get(key)
 
 	var a []string
 
-	switch v := ret.(type) {
-	case []interface{}:
-		for _, u := range v {
-
-			var w string
-
-			switch s := u.(type) {
-			case string:
-				w = s
-			case float64:
-				w = strconv.FormatFloat(u.(float64), 'f', -1, 64)
-			case int:
-				w = strconv.FormatInt(int64(u.(int)), 10)
-			case []byte:
-				w = string(s)
-			case nil:
-				w = ""
-			default:
-				w = ""
-			}
-
-			a = append(a, w)
-		}
-		return a
-	case []string:
-		return v
-	default:
-		return a
+	if err != nil {
+		return a, err
 	}
+
+	return cast.ToStringSliceE(ret)
+}
+
+// GetIntSlice module config value
+func (conf *Configuration) GetIntSlice(key string) ([]int, error) {
+	ret, err := conf.Get(key)
+
+	var a []int
+
+	if err != nil {
+		return a, err
+	}
+
+	return cast.ToIntSliceE(ret)
+}
+
+// GetTime module config value
+func (conf *Configuration) GetTime(key string) (time.Time, error) {
+	ret, err := conf.Get(key)
+
+	if err != nil {
+		return time.Time{}, err
+	}
+
+	return cast.ToTimeE(ret)
 }
 
 // String returns configuration as json encoded string
@@ -367,7 +331,7 @@ func (conf *Configuration) String() string {
 
 // LoadExampleConfig loads example config
 func (conf *Configuration) LoadExampleConfig() {
-	conf.HostName = "irc.deltaanime.net"
+	conf.Server = "irc.freenode.net:6667"
 	conf.Owner = "Natrim"
 	conf.UpdateUrl = "http://natrim.cz/uploads/grainbot_linux"
 	conf.Modules = map[string]interface{}{"autojoin": map[string]interface{}{"channels": []string{"#pony"}}}
